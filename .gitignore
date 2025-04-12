@@ -5,6 +5,7 @@ Backend/obj
 Backend/Properties/
 Backend/Migrations/
 Backend/Backend.csproj
+Backend/appsettings.json
 Backend/appsettings.Development.json
 Backend.Sln
 

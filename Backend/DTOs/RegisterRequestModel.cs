@@ -1,13 +1,9 @@
-using System;
 using System.ComponentModel.DataAnnotations;
 
-namespace Backend.Models;
+namespace Backend.DTOs;
 
-public class MemberModel
+public class RegisterRequestModel
 {
-    [Key]
-    public Guid Id { get; set; }
-
     [Required]
     [StringLength(25)]
     public required string FirstName { get; set; }
