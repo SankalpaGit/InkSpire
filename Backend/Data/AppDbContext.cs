@@ -8,12 +8,15 @@ public class AppDbContext : DbContext
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
     public DbSet<MemberModel> Members { get; set; }
+    public DbSet<StaffModel> Staffs { get; set; }
+    public DbSet<AdminModel> Admins { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
         // Configure MemberModel.Id as a non-identity column
+        
         modelBuilder.Entity<MemberModel>()
             .Property(m => m.Id)
             .ValueGeneratedNever(); // Prevents the database from treating it as an identity column
