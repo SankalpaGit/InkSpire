@@ -1,0 +1,14 @@
+#Backend gitignore file
+
+Backend/bin
+Backend/obj
+Backend/Properties/
+Backend/Migrations/
+Backend/Backend.csproj
+Backend/appsettings.Development.json
+Backend.Sln
+
+#Frontend gitignore file
+
+
+.vscode
