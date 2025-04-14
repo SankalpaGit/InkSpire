@@ -11,6 +11,7 @@ public class AppDbContext : DbContext
     public DbSet<StaffModel> Staffs { get; set; }
     public DbSet<AdminModel> Admins { get; set; }
     public DbSet<BookModel> Books { get; set; }
+    public DbSet<BookmarkModel> Bookmarks { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
