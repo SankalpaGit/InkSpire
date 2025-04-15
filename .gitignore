@@ -4,6 +4,7 @@ Backend/bin
 Backend/obj
 Backend/Properties/
 Backend/Migrations/
+Backend/Uploads
 Backend/Backend.csproj
 Backend/appsettings.json
 Backend/appsettings.Development.json
