@@ -35,15 +35,15 @@ Follow these steps to set up the project on your local machine:
    git clone https://github.com/SankalpaGit/InkSpire.git
 
 2. **Install packages**;
-    cd frontend : **npm install**
+    cd authorities and then members : **npm install** 
     cd Backend : **dotnet restore**
 
 3. **Update DB Connection String**;
-    Navigate to Backend/appsettings.json
+    Navigate to Backend/appsettings.json <br>
     Update your connection String
 
 4. **Make Migrations**;
-    dotnet ef migrations add migrationname
+    dotnet ef migrations add migrationname <br>
     dotnet ef database update
 
 5. **Running the System**;
