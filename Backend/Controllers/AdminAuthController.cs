@@ -37,7 +37,7 @@ public class AdminAuthController : ControllerBase
         }
 
         // Generate JWT token
-        var token = _jwtService.GenerateToken(admin.Id, admin.Email);
+        var token = _jwtService.GenerateToken(admin.Id, admin.Email, "Admin");
 
         return Ok(new { Token = token });
     }

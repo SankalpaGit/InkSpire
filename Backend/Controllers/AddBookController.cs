@@ -20,7 +20,7 @@ public class BookController : ControllerBase
     }
 
     [HttpPost("add")]
-    [Authorize] // Only admins can access this endpoint
+    [Authorize(Roles = "Admin")] // Only admins can access this endpoint
     public async Task<IActionResult> AddBook([FromForm] BookCreateRequestModel model)
     {
         // Validate required fields
@@ -81,5 +81,120 @@ public class BookController : ControllerBase
         _dbContext.SaveChanges();
 
         return Ok(new { Message = "Book added successfully.", BookId = book.BookId });
+    }
+
+
+    [HttpPut("update/{id}")]
+    [Authorize(Roles = "Admin")] // Only admins can update books
+    public async Task<IActionResult> UpdateBook(Guid id, [FromForm] BookCreateRequestModel model)
+    {
+        var book = _dbContext.Books.FirstOrDefault(b => b.BookId == id);
+
+        if (book == null)
+        {
+            return NotFound(new { Message = "Book not found." });
+        }
+
+        // Update only the fields that are provided
+        if (!string.IsNullOrWhiteSpace(model.Title))
+        {
+            book.Title = model.Title;
+        }
+
+        if (!string.IsNullOrWhiteSpace(model.Author))
+        {
+            book.Author = model.Author;
+        }
+
+        if (!string.IsNullOrWhiteSpace(model.Description))
+        {
+            book.Description = model.Description;
+        }
+
+        if (!string.IsNullOrWhiteSpace(model.Genre))
+        {
+            book.Genre = model.Genre;
+        }
+
+        if (model.Price > 0)
+        {
+            book.Price = model.Price;
+        }
+
+        if (model.StockQuantity >= 0)
+        {
+            book.StockQuantity = model.StockQuantity;
+        }
+
+        if (!string.IsNullOrWhiteSpace(model.Language))
+        {
+            book.Language = model.Language;
+        }
+
+        if (!string.IsNullOrWhiteSpace(model.Format))
+        {
+            book.Format = model.Format;
+        }
+
+        if (!string.IsNullOrWhiteSpace(model.Publisher))
+        {
+            book.Publisher = model.Publisher;
+        }
+
+        if (!string.IsNullOrWhiteSpace(model.ISBN))
+        {
+            book.ISBN = model.ISBN;
+        }
+
+        if (model.PublicationDate.HasValue)
+        {
+            book.PublicationDate = model.PublicationDate.Value;
+        }
+
+        book.IsAvailableInStore = model.IsAvailableInStore;
+        book.IsExclusiveEdition = model.IsExclusiveEdition;
+
+        // Handle image upload if a new image is provided
+        if (model.CoverImage != null && model.CoverImage.Length > 0)
+        {
+            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "Uploads");
+            if (!Directory.Exists(uploadsFolder))
+            {
+                Directory.CreateDirectory(uploadsFolder);
+            }
+
+            var uniqueFileName = $"{Guid.NewGuid()}_{model.CoverImage.FileName}";
+            var imagePath = Path.Combine("Uploads", uniqueFileName);
+            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+            using (var fileStream = new FileStream(filePath, FileMode.Create))
+            {
+                await model.CoverImage.CopyToAsync(fileStream);
+            }
+
+            book.CoverImage = imagePath; // Update the cover image path
+        }
+
+        _dbContext.SaveChanges();
+
+        return Ok(new { Message = "Book updated successfully." });
+    }
+    // Delete a book
+    [HttpDelete("delete/{id}")]
+    [Authorize(Roles = "Admin")] // Only admins can delete books
+    public IActionResult DeleteBook(Guid id)
+    {
+        var book = _dbContext.Books.FirstOrDefault(b => b.BookId == id);
+
+        if (book == null)
+        {
+            return NotFound(new { Message = "Book not found." });
+        }
+
+        // Delete the book
+        _dbContext.Books.Remove(book);
+        _dbContext.SaveChanges();
+
+        return Ok(new { Message = "Book deleted successfully." });
     }
 }

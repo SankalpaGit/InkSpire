@@ -21,12 +21,12 @@ export default function Navbar() {
   if (!mounted) return null; // ✅ Don't render anything on the server
 
   return (
-    <nav className="flex justify-between items-center p-4 bg-white shadow">
-      <Link href="/">
+    <nav className="flex justify-between items-center p-4 bg-[#f5f3f1] shadow fixed top-0 z-10 w-full">
+      <Link href="/" className="ml-10">
         <Image src="/logo.png" alt="Logo" width={120} height={40} />
       </Link>
 
-      <div className="flex gap-6 text-sm font-medium">
+      <div className="mr-10 flex gap-6 text-sm font-medium text-[#112742] items-center">
         {user ? (
           user.role === "admin" ? (
             <>
@@ -34,15 +34,17 @@ export default function Navbar() {
               <Link href="/books">Books</Link>
               <Link href="/staffs">Staffs</Link>
               <Link href="/announcement">Announcement</Link>
+              <button className="bg-red-600 p-2 rounded-md items-center text-gray-100">Log Out</button>
             </>
           ) : (
             <>
-              <Link href="/home">Home</Link>
-              <Link href="/orders">Orders</Link>
+              <Link href="/staff/home">Home</Link>
+              <Link href="/staff/orders">Orders</Link>
+              <button className="bg-red-600 p-2 rounded-md items-center text-gray-100">Log Out</button>
             </>
           )
         ) : (
-          <Link href="/">Login</Link>
+          <Link href="/" className="mr-10">Login</Link>
         )}
       </div>
     </nav>

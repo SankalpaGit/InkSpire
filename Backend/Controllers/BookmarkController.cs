@@ -1,7 +1,9 @@
 using Backend.Models;
 using Backend.Data;
+using Backend.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace Backend.Controllers;
 
@@ -16,37 +18,67 @@ public class BookmarkController : ControllerBase
         _dbContext = dbContext;
     }
 
-    // Add a bookmark
     [HttpPost("add")]
-    [Authorize] // Only authenticated members can add bookmarks
-    public IActionResult AddBookmark([FromBody] BookmarkModel model)
+    [Authorize(Roles = "Member")] // Only authenticated members can add bookmarks
+    public IActionResult AddBookmark([FromBody] BookmarkRequestDTO request)
     {
+        // Decode MemberId from the JWT token
+        var memberId = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(memberId) || !Guid.TryParse(memberId, out var parsedMemberId))
+        {
+            return Unauthorized(new { Message = "Invalid or missing member ID." });
+        }
+
+        // Validate BookId
+        if (request.BookId == Guid.Empty)
+        {
+            return BadRequest(new { Message = "BookId cannot be empty." });
+        }
+
         // Check if the bookmark already exists
         var existingBookmark = _dbContext.Bookmarks
-            .FirstOrDefault(b => b.MemberId == model.MemberId && b.BookId == model.BookId);
+            .FirstOrDefault(b => b.MemberId == parsedMemberId && b.BookId == request.BookId);
 
         if (existingBookmark != null)
         {
             return BadRequest(new { Message = "This book is already bookmarked by the member." });
         }
 
-        // Add the bookmark
-        model.BookmarkId = Guid.NewGuid();
-        model.CreatedAt = DateTime.UtcNow;
-        _dbContext.Bookmarks.Add(model);
+        // Create a new bookmark
+        var bookmark = new BookmarkModel
+        {
+            BookmarkId = Guid.NewGuid(),
+            MemberId = parsedMemberId,
+            BookId = request.BookId,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _dbContext.Bookmarks.Add(bookmark);
         _dbContext.SaveChanges();
 
         return Ok(new { Message = "Book bookmarked successfully." });
     }
 
-    // Remove a bookmark
     [HttpDelete("remove")]
-    [Authorize] // Only authenticated members can remove bookmarks
-    public IActionResult RemoveBookmark([FromQuery] Guid memberId, [FromQuery] Guid bookId)
+    [Authorize(Roles = "Member")] // Only authenticated members can remove bookmarks
+    public IActionResult RemoveBookmark([FromQuery] Guid bookId)
     {
+        // Decode MemberId from the JWT token
+        var memberId = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(memberId) || !Guid.TryParse(memberId, out var parsedMemberId))
+        {
+            return Unauthorized(new { Message = "Invalid or missing member ID." });
+        }
+
+        // Validate BookId
+        if (bookId == Guid.Empty)
+        {
+            return BadRequest(new { Message = "BookId cannot be empty." });
+        }
+
         // Find the bookmark
         var bookmark = _dbContext.Bookmarks
-            .FirstOrDefault(b => b.MemberId == memberId && b.BookId == bookId);
+            .FirstOrDefault(b => b.MemberId == parsedMemberId && b.BookId == bookId);
 
         if (bookmark == null)
         {
@@ -59,4 +91,5 @@ public class BookmarkController : ControllerBase
 
         return Ok(new { Message = "Bookmark removed successfully." });
     }
+
 }

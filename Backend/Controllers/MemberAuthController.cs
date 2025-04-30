@@ -47,7 +47,7 @@ public class MemberAuthController : ControllerBase
             Password = _hashedPassword.HashPassword(model.Password) // Hash the password
         };
 
-     
+
 
         // Hash the password before storing it
         model.Password = _hashedPassword.HashPassword(model.Password);
@@ -77,7 +77,7 @@ public class MemberAuthController : ControllerBase
         }
 
         // Generate JWT token
-        var token = _jwtService.GenerateToken(member.Id, member.Email);
+        var token = _jwtService.GenerateToken(member.Id, member.Email, "Member");
 
         return Ok(new { Token = token });
     }
