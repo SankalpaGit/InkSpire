@@ -86,7 +86,7 @@ public class BookController : ControllerBase
 
     [HttpPut("update/{id}")]
     [Authorize(Roles = "Admin")] // Only admins can update books
-    public async Task<IActionResult> UpdateBook(Guid id, [FromForm] BookCreateRequestModel model)
+    public async Task<IActionResult> UpdateBook(Guid id, [FromForm] BookUpdateRequestModel model)
     {
         var book = _dbContext.Books.FirstOrDefault(b => b.BookId == id);
 
@@ -116,14 +116,14 @@ public class BookController : ControllerBase
             book.Genre = model.Genre;
         }
 
-        if (model.Price > 0)
+        if (model.Price.HasValue && model.Price > 0)
         {
-            book.Price = model.Price;
+            book.Price = model.Price.Value;
         }
 
-        if (model.StockQuantity >= 0)
+        if (model.StockQuantity.HasValue && model.StockQuantity >= 0)
         {
-            book.StockQuantity = model.StockQuantity;
+            book.StockQuantity = model.StockQuantity.Value;
         }
 
         if (!string.IsNullOrWhiteSpace(model.Language))
@@ -151,8 +151,15 @@ public class BookController : ControllerBase
             book.PublicationDate = model.PublicationDate.Value;
         }
 
-        book.IsAvailableInStore = model.IsAvailableInStore;
-        book.IsExclusiveEdition = model.IsExclusiveEdition;
+        if (model.IsAvailableInStore.HasValue)
+        {
+            book.IsAvailableInStore = model.IsAvailableInStore.Value;
+        }
+
+        if (model.IsExclusiveEdition.HasValue)
+        {
+            book.IsExclusiveEdition = model.IsExclusiveEdition.Value;
+        }
 
         // Handle image upload if a new image is provided
         if (model.CoverImage != null && model.CoverImage.Length > 0)
@@ -179,7 +186,7 @@ public class BookController : ControllerBase
 
         return Ok(new { Message = "Book updated successfully." });
     }
-    // Delete a book
+
     [HttpDelete("delete/{id}")]
     [Authorize(Roles = "Admin")] // Only admins can delete books
     public IActionResult DeleteBook(Guid id)
@@ -197,4 +204,5 @@ public class BookController : ControllerBase
 
         return Ok(new { Message = "Book deleted successfully." });
     }
+
 }
