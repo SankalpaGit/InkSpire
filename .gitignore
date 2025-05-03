@@ -11,13 +11,10 @@ Backend/appsettings.Development.json
 Backend.Sln
 
 #Frontend gitignore file
-authorities/node_modules
-authorities/package-lock.json
-authorities/package.json
-authorities/.next
+Frontend/public/
+Frontend/node_modules
+Frontend/package-lock.json
+Frontend/package.json
 
-members/node_modules
-members/package-lock.json
-members/package.json
 
 .vscode
