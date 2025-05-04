@@ -15,6 +15,10 @@ import Staff from './users/admin/pages/Staff'
 import Orders from './users/admin/pages/Orders'
 import StaffHome from './users/staff/pages/StaffHome'
 import ViewOrders from './users/staff/pages/ViewOrders'
+import Login from './users/members/pages/Login'
+import Register from './users/members/pages/Register'
+import StaffLogin from './users/staff/pages/StaffLogin'
+import AdminAuth from './users/admin/pages/AdminAuth'
 function App() {
 
   return (
@@ -24,7 +28,10 @@ function App() {
       <Route path="/bookmarks" element={<Bookmarks />} />
       <Route path="/cart" element={<Cart />} />
       <Route path="/profile" element={<Profile />} />
+      <Route path='/login' element={<Login />} />
+      <Route path='/register' element={<Register />} />
 
+      <Route path="/admin" element={<AdminAuth />} />
       <Route path="/admin/dashboard" element={<Dashboard/>} />
       <Route path="/admin/add-book" element={<AddBook/>} />
       <Route path="/admin/inventory" element={<Inventory/>} />
@@ -33,6 +40,7 @@ function App() {
       <Route path="/admin/staff" element={<Staff />} />
       <Route path='/admin/orders' element={<Orders />} />
 
+      <Route path="/staff" element={<StaffLogin />} />
       <Route path="/staff/home" element={<StaffHome />} />
       <Route path="/staff/order" element={<ViewOrders />} />
 

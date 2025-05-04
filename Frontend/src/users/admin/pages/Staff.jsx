@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import AdminLayout from '../layout/AdminLayout';
 import { FaPlus, FaTimes, FaTrash } from 'react-icons/fa';
 import gsap from 'gsap';
+import axios from 'axios';
 
 const Staff = () => {
     const [formData, setFormData] = useState({
@@ -11,16 +12,32 @@ const Staff = () => {
         password: '',
     });
 
-    const [staffList, setStaffList] = useState([
-        { firstName: 'Alice', lastName: 'Smith', email: 'alice@example.com' },
-        { firstName: 'Bob', lastName: 'Johnson', email: 'bob@example.com' },
-        { firstName: 'Charlie', lastName: 'Brown', email: 'charlie@gmail.com' },
-        { firstName: 'David', lastName: 'Williams', email: 'will@gmail.com' },
-    ]);
-
+    const [staffList, setStaffList] = useState([]); // Initialize as an empty array
     const [showModal, setShowModal] = useState(false);
     const modalRef = useRef();
 
+    const fetchStaffList = () => {
+        axios
+            .get('http://localhost:5106/api/StaffAuth/all', {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`
+                }
+            })
+            .then(response => {
+                setStaffList(response.data.staff || []); // lowercase 's'
+                console.log('Staff list:', response.data.staff);
+                
+            })
+            .catch(error => {
+                console.error('Error fetching staff data:', error);
+            });
+    };
+    
+    
+    useEffect(() => {
+        fetchStaffList();
+    }, []);
+    
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData((prev) => ({
@@ -33,10 +50,38 @@ const Staff = () => {
         e.preventDefault();
         if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) return;
 
-        setStaffList((prev) => [...prev, formData]);
-        setFormData({ firstName: '', lastName: '', email: '', password: '' });
-        setShowModal(false);
+        axios
+            .post(
+                'http://localhost:5106/api/StaffAuth/register',
+                {
+                    firstName: formData.firstName,
+                    lastName: formData.lastName,
+                    email: formData.email,
+                    password: formData.password,
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem('token')}`
+                    }
+                }
+            )
+            .then(response => {
+                // Show the success message
+                console.log('Staff registered:', response.data);
+                alert(response.data.message);
+
+                fetchStaffList(); 
+
+                // Clear form data and close the modal
+                setFormData({ firstName: '', lastName: '', email: '', password: '' });
+                setShowModal(false);
+            })
+            .catch(error => {
+                console.error('Error registering staff:', error);
+                alert('Error registering staff');
+            });
     };
+
 
     const handleDelete = (index) => {
         setStaffList((prev) => prev.filter((_, i) => i !== index));
@@ -67,7 +112,7 @@ const Staff = () => {
 
                 <div className="overflow-x-auto border border-indigo-200 rounded-lg shadow-sm">
                     <table className="min-w-full bg-white">
-                        <thead className="bg-gray-50 ">
+                        <thead className="bg-gray-50">
                             <tr>
                                 <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Avatar</th>
                                 <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">First Name</th>

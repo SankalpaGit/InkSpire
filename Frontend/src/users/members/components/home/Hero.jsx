@@ -108,7 +108,7 @@ export const Hero = () => {
                         loop
                         playsInline
                     >
-                        <source src="/videos/books.mp4" type="video/mp4" />
+                        <source src="https://videocdn.cdnpk.net/videos/8cd1ac03-9988-5295-99ba-916df092bc70/horizontal/previews/clear/large.mp4?token=exp=1746321156~hmac=ab733068cb594f66814e63cbd863ed8ab72df872e7437aa120a0421dbd8b73f3" type="video/mp4" />
                         Your browser does not support the video tag.
                     </video>
 

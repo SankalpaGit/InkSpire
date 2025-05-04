@@ -1,1 +1,7 @@
 @import "tailwindcss";
+
+/* tailwind.css or your global stylesheet */
+.glow {
+    box-shadow: 0 0 20px #112742;
+  }
+  

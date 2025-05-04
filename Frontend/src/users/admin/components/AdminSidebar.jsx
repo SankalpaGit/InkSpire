@@ -25,8 +25,8 @@ const AdminSidebar = () => {
 
     const handleLogout = () => {
         // Example: remove auth token, then redirect
-        localStorage.removeItem('authToken');
-        navigate('/login');
+        localStorage.removeItem('token');
+        navigate('/admin');
     };
 
     return (
