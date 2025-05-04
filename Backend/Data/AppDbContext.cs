@@ -14,6 +14,9 @@ public class AppDbContext : DbContext
     public DbSet<BookmarkModel> Bookmarks { get; set; }
     public DbSet<SaleModel> Sales { get; set; }
 
+    public DbSet<CartModel> Carts { get; set; }
+    public DbSet<CartItemModel> CartItems { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

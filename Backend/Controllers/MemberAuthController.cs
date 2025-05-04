@@ -47,11 +47,6 @@ public class MemberAuthController : ControllerBase
             Password = _hashedPassword.HashPassword(model.Password) // Hash the password
         };
 
-
-
-        // Hash the password before storing it
-        model.Password = _hashedPassword.HashPassword(model.Password);
-
         // Save the member to the database
         _dbContext.Members.Add(member);
         _dbContext.SaveChanges();

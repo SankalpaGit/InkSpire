@@ -41,8 +41,41 @@ public class StaffAuthController : ControllerBase
         _dbContext.Staffs.Add(model);
         _dbContext.SaveChanges();
 
-        return Ok(new { Message = "Staff registered successfully." });
+        return Ok(new
+        {
+            Message = "Staff registered successfully.",
+            Staff = new
+            {
+                model.Id,
+                model.FirstName,
+                model.LastName,
+                model.Email
+            }
+        });
     }
+
+    [HttpGet("all")]
+    [Authorize(Roles = "Admin")] // Only admins can view the list of staff
+    public IActionResult GetAllStaff()
+    {
+        var staffList = _dbContext.Staffs
+            .Select(s => new
+            {
+                s.Id,
+                s.FirstName,
+                s.LastName,
+                s.Email // Include the email
+            })
+            .ToList();
+
+        if (!staffList.Any())
+        {
+            return NotFound(new { Message = "No staff members found." });
+        }
+
+        return Ok(new { Message = "Staff members retrieved successfully.", Staff = staffList });
+    }
+
 
     // Staff login
     [HttpPost("login")]
