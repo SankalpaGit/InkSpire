@@ -23,4 +23,6 @@ public class CartItemModel
     public int Quantity { get; set; } // Quantity of the book in the cart
 
     public virtual BookModel? Book { get; set; } // Navigation property for the book
+
+    public virtual CartModel? Cart { get; set; } // Navigation property for the cart
 }
