@@ -5,10 +5,8 @@ Backend/obj
 Backend/Properties/
 Backend/Migrations/
 Backend/Uploads
-Backend/Backend.csproj
-Backend/appsettings.json
-Backend/appsettings.Development.json
-Backend.Sln
+
+
 
 #Frontend gitignore file
 Frontend/public/
