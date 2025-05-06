@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { AiFillStar, AiOutlineStar } from "react-icons/ai";
 import { FaStarHalfAlt } from "react-icons/fa";
 import { IoCartOutline } from "react-icons/io5";
@@ -12,7 +13,6 @@ const sortOptions = [
   { label: "Publish Date (Oldest)", value: "date-asc" },
 ];
 
-// Fix duplicate Paperback
 const formats = ["Hardcover", "Paperback", "E-book"];
 
 const renderStars = (rating) => {
@@ -36,130 +36,82 @@ const renderStars = (rating) => {
 const ProductPage = () => {
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState("");
-  const [priceRange, setPriceRange] = useState(50);
-  const [selectedRatings, setSelectedRatings] = useState([]);
-  const [availability, setAvailability] = useState([]);
-  const [selectedFormats, setSelectedFormats] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [books, setBooks] = useState([]); // Store books from API
-  const [totalBooks, setTotalBooks] = useState(0); // Store total books for pagination
-  const [loading, setLoading] = useState(false); // Track loading state
-  const [error, setError] = useState(""); // Store error message
+  const [books, setBooks] = useState([]);
+  const [totalBooks, setTotalBooks] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const booksPerPage = 6;
 
-  // Fetch books from backend
-  const fetchBooks = () => {
-    // Set loading state
+  const fetchBooks = (query = "") => {
     setLoading(true);
-    setError(""); // Clear previous errors
+    setError("");
 
     const token = localStorage.getItem("token");
     if (!token) {
-      // Set error for missing token
       setError("Please log in to browse books.");
       setTimeout(() => (window.location.href = "/login"), 2000);
       setLoading(false);
       return;
     }
 
+    const url = query
+      ? `http://localhost:5106/api/SearchBook/search?query=${encodeURIComponent(query)}`
+      : `http://localhost:5106/api/ViewBook/all?pageNumber=1&pageSize=100`;
+
     axios
-      .get(`http://localhost:5106/api/ViewBook/all?pageNumber=1&pageSize=100`, {
+      .get(url, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       })
       .then((response) => {
-        // Map backend books to match frontend structure
-        const fetchedBooks = response.data.books.map((book) => ({
-          id: book.bookId,
-          title: book.title,
-          author: book.author,
-          price: book.price,
-          rating: book.rating || 0, // Fallback to 0 if rating is missing
-          inStore: book.isAvailableInStore,
-          format: book.format === "Softcopy" ? "Paperback" : book.format, // Map Softcopy to Paperback
-          published: book.publicationDate
-            ? book.publicationDate.split("T")[0]
-            : "2000-01-01", // Fallback date
-          image: book.coverImage
+        console.log("API response:", JSON.stringify(response.data, null, 2));
+        const fetchedBooks = (query ? response.data : response.data.books).map((book) => {
+          const imageUrl = book.coverImage
             ? `http://localhost:5106/${book.coverImage}`
-            : "/default-cover.jpg", // Use Uploads folder
-        }));
+            : "/default-cover.jpg";
+          return {
+            id: book.bookId,
+            title: book.title || "Unknown Title",
+            author: book.author || "Unknown Author",
+            price: book.price || 0,
+            rating: book.rating || 0,
+            inStore: book.isAvailableInStore || false,
+            format: book.format === "Softcopy" ? "Paperback" : book.format || "Unknown Format",
+            published: book.publicationDate
+              ? book.publicationDate.split("T")[0]
+              : "2000-01-01",
+            image: imageUrl,
+          };
+        });
 
-        // Set books and total books
         setBooks(fetchedBooks);
-        setTotalBooks(response.data.totalBooks);
-        console.log("Books fetched:", fetchedBooks);
+        setTotalBooks(query ? fetchedBooks.length : response.data.totalBooks || fetchedBooks.length);
       })
       .catch((error) => {
-        // Set error message for API failure
-        console.error("Error fetching books:", error);
-        if (error.response?.status === 401) {
-          setError("Your session has expired. Please log in again.");
-          setTimeout(() => (window.location.href = "/login"), 2000);
-        } else {
-          setError("Unable to load books. Please try again later.");
-        }
-        setBooks([]); // Clear books on error
+        setBooks([]);
       })
       .finally(() => {
-        // Clear loading state
         setLoading(false);
       });
   };
 
-  // Fetch books on component mount
   useEffect(() => {
-    fetchBooks();
-  }, []);
+    fetchBooks(search);
+  }, [search]);
 
-  const toggleCheckbox = (value, list, setList) => {
-    setList(
-      list.includes(value) ? list.filter((v) => v !== value) : [...list, value]
-    );
-  };
+  const sortedBooks = books.sort((a, b) => {
+    if (sort === "title-asc") return a.title.localeCompare(b.title);
+    if (sort === "title-desc") return b.title.localeCompare(a.title);
+    if (sort === "date-asc") return new Date(a.published) - new Date(b.published);
+    if (sort === "date-desc") return new Date(b.published) - new Date(a.published);
+    return 0;
+  });
 
-  const clearFilters = () => {
-    setPriceRange(50);
-    setSelectedRatings([]);
-    setAvailability([]);
-    setSelectedFormats([]);
-    setCurrentPage(1);
-  };
-
-  const filteredBooks = books
-    .filter((b) => b.title.toLowerCase().includes(search.toLowerCase()))
-    .filter((b) => b.price <= priceRange)
-    .filter((b) => {
-      if (selectedRatings.includes("1-2") && b.rating >= 1 && b.rating < 3)
-        return true;
-      if (selectedRatings.includes("3-4") && b.rating >= 3 && b.rating < 5)
-        return true;
-      if (selectedRatings.includes("5") && b.rating === 5) return true;
-      if (selectedRatings.length === 0) return true;
-      return false;
-    })
-    .filter((b) =>
-      availability.length
-        ? availability.includes(b.inStore ? "in" : "out")
-        : true
-    )
-    .filter((b) =>
-      selectedFormats.length ? selectedFormats.includes(b.format) : true
-    )
-    .sort((a, b) => {
-      if (sort === "title-asc") return a.title.localeCompare(b.title);
-      if (sort === "title-desc") return b.title.localeCompare(a.title);
-      if (sort === "date-asc")
-        return new Date(a.published) - new Date(b.published);
-      if (sort === "date-desc")
-        return new Date(b.published) - new Date(a.published);
-      return 0;
-    });
-
-  const totalPages = Math.ceil(filteredBooks.length / booksPerPage);
-  const paginatedBooks = filteredBooks.slice(
+  const totalPages = Math.ceil(sortedBooks.length / booksPerPage);
+  const paginatedBooks = sortedBooks.slice(
     (currentPage - 1) * booksPerPage,
     currentPage * booksPerPage
   );
@@ -201,32 +153,25 @@ const ProductPage = () => {
 
         {/* Main Content */}
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Filters */}
+          {/* Filters (Non-functional, UI only) */}
           <div className="w-full lg:w-1/4 bg-gray-100 p-4 rounded-xl shadow space-y-6 h-fit">
             <div className="flex justify-between items-center mb-2">
               <h4 className="font-semibold text-gray-800 text-lg">Filters</h4>
             </div>
-
-            {/* Price */}
             <div>
               <h4 className="font-semibold mb-2 text-gray-800">
-                Price Range (Up to ${priceRange})
+                Price Range (Up to $50)
               </h4>
               <input
                 type="range"
                 min="0"
-                max="1000" // Reverted to original max
+                max="1000"
                 step="1"
-                value={priceRange}
-                onChange={(e) => {
-                  setPriceRange(parseInt(e.target.value));
-                  setCurrentPage(1);
-                }}
-                className="w-full h-3 rounded-lg cursor-pointer bg-indigo-200"
+                value="50"
+                disabled
+                className="w-full h-3 rounded-lg cursor-not-allowed bg-indigo-200"
               />
             </div>
-
-            {/* Rating */}
             <div>
               <h4 className="font-semibold mb-2 text-gray-800">Rating</h4>
               {["1-2", "3-4", "5"].map((r) => (
@@ -234,19 +179,13 @@ const ProductPage = () => {
                   <input
                     type="checkbox"
                     className="w-5 h-5 accent-indigo-600 rounded focus:ring-indigo-500"
-                    checked={selectedRatings.includes(r)}
-                    onChange={() => {
-                      toggleCheckbox(r, selectedRatings, setSelectedRatings);
-                      setCurrentPage(1);
-                    }}
+                    disabled
                   />
                   <span className="text-gray-700">{r}</span>
                   <AiFillStar className="text-yellow-500 text-2xl" />
                 </label>
               ))}
             </div>
-
-            {/* Availability */}
             <div>
               <h4 className="font-semibold mb-2 text-gray-800">Availability</h4>
               <div className="space-y-1 text-sm">
@@ -255,19 +194,13 @@ const ProductPage = () => {
                     <input
                       type="checkbox"
                       className="w-5 h-5 accent-indigo-600 rounded focus:ring-indigo-500"
-                      checked={availability.includes(type)}
-                      onChange={() => {
-                        toggleCheckbox(type, availability, setAvailability);
-                        setCurrentPage(1);
-                      }}
+                      disabled
                     />
                     {type === "in" ? "In Store" : "Not Available"}
                   </label>
                 ))}
               </div>
             </div>
-
-            {/* Format */}
             <div>
               <h4 className="font-semibold mb-2 text-gray-800">Format</h4>
               <div className="space-y-1 text-sm">
@@ -276,29 +209,23 @@ const ProductPage = () => {
                     <input
                       type="checkbox"
                       className="w-5 h-5 accent-indigo-600 rounded focus:ring-indigo-500"
-                      checked={selectedFormats.includes(f)}
-                      onChange={() => {
-                        toggleCheckbox(f, selectedFormats, setSelectedFormats);
-                        setCurrentPage(1);
-                      }}
+                      disabled
                     />
                     {f}
                   </label>
                 ))}
               </div>
             </div>
-
             <button
-              onClick={clearFilters}
-              className="w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700 transition-all"
+              className="w-full bg-indigo-600 text-white py-2 rounded opacity-50 cursor-not-allowed"
+              disabled
             >
               Clear All
             </button>
           </div>
 
-          {/* Product Grid */}
+          {/* Book Grid */}
           <div className="w-full lg:w-3/4">
-            {/* Show error message if any */}
             {error && <p className="text-red-600 text-center mb-4">{error}</p>}
             {loading && (
               <p className="text-gray-600 text-center">Loading books...</p>
@@ -313,19 +240,28 @@ const ProductPage = () => {
                       key={book.id}
                       className="bg-white p-4 rounded-xl shadow hover:shadow-lg transition-all h-fit"
                     >
-                      {/* Display book cover image */}
-                      <img
-                        src={book.image}
-                        alt={book.title}
-                        className="h-52 w-full object-contain mb-4 rounded"
-                        onError={(e) => (e.target.src = "/default-cover.jpg")} // Fallback on error
-                      />
+                      <Link
+                        to={`/book/${book.id}`}
+                        onClick={book.id}
+                      >
+                        <img
+                          src={book.image}
+                          alt={book.title}
+                          className="h-52 w-full object-contain mb-4 rounded"
+                          onError={(e) => {
+                            e.target.src = "/default-cover.jpg";
+                          }}
+                        />
+                      </Link>
                       <h3 className="font-semibold text-lg text-gray-800">
-                        {book.title}
+                        <Link
+                          to={`/book/${book.id}`}
+                          className="hover:text-indigo-600"
+                        >
+                          {book.title}
+                        </Link>
                       </h3>
-                      <p className="text-sm text-gray-600 mb-1">
-                        {book.author}
-                      </p>
+                      <p className="text-sm text-gray-600 mb-1">{book.author}</p>
                       <div className="flex items-center justify-between">
                         {renderStars(book.rating)}
                         <p className="text-indigo-600 font-bold mt-1">
@@ -333,7 +269,7 @@ const ProductPage = () => {
                         </p>
                       </div>
                       <button
-                        onClick={() => handleAddToCart(book)}
+                    
                         className="mt-4 w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
                       >
                         <IoCartOutline className="text-xl" />
@@ -345,7 +281,6 @@ const ProductPage = () => {
               </div>
             )}
 
-            {/* Pagination Controls */}
             {totalPages > 1 && (
               <div className="flex justify-center items-center mt-8 space-x-2">
                 <button
