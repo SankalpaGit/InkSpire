@@ -16,6 +16,8 @@ public class BookmarkModel
     [Required]
     [ForeignKey("Book")]
     public Guid BookId { get; set; } // Foreign key to the BookModel
+    
+    public virtual BookModel? Book { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow; // Timestamp when the bookmark was created
 }

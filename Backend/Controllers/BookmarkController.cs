@@ -92,4 +92,45 @@ public class BookmarkController : ControllerBase
         return Ok(new { Message = "Bookmark removed successfully." });
     }
 
+
+    [HttpGet("view")]
+    [Authorize(Roles = "Member")] // Only authenticated members can view bookmarks
+    public IActionResult ViewBookmarks()
+    {
+        try
+        {
+            // Decode MemberId from the JWT token
+            var memberId = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(memberId) || !Guid.TryParse(memberId, out var parsedMemberId))
+            {
+                return Unauthorized(new { Message = "Invalid or missing member ID." });
+            }
+
+            // Get all bookmarks for the member
+            var bookmarks = _dbContext.Bookmarks
+                .Where(b => b.MemberId == parsedMemberId)
+                .Select(b => new
+                {
+                    b.BookmarkId,
+                    b.BookId,
+                    BookTitle = b.Book != null ? b.Book.Title : "Unknown Title", // Include book title
+                    BookImage = b.Book != null ? b.Book.CoverImage : null, // Include book cover image
+                    BookAuthor = b.Book != null ? b.Book.Author : "Unknown Author", // Include book author
+                    b.CreatedAt
+                })
+                .ToList();
+
+            if (!bookmarks.Any())
+            {
+                return NotFound(new { Message = "No bookmarks found." });
+            }
+
+            return Ok(new { Message = "Bookmarks retrieved successfully.", Bookmarks = bookmarks });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Message = "An error occurred while retrieving bookmarks.", Details = ex.Message });
+        }
+    }
+
 }

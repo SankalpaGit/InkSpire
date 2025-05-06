@@ -3,6 +3,7 @@ using Backend.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace Backend.Controllers;
@@ -18,25 +19,34 @@ public class CartController : ControllerBase
         _dbContext = dbContext;
     }
 
+    public class AddToCartRequest
+    {
+        public Guid BookId { get; set; }
+        public int Quantity { get; set; }
+    }
+
     // Add a book to the cart
     [HttpPost("add")]
-    [Authorize(Roles = "Member")] // Only can add to the cart
-    public IActionResult AddToCart(Guid bookId, int quantity)
+    [Authorize(Roles = "Member")]
+    public IActionResult AddToCart([FromBody] AddToCartRequest request)
     {
+        Console.WriteLine($"Received BookId: {request.BookId}, Quantity: {request.Quantity}");
+
         // Decode MemberId from the JWT token
         var memberId = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrEmpty(memberId) || !Guid.TryParse(memberId, out var parsedMemberId))
         {
             return Unauthorized(new { Message = "Invalid or missing member ID." });
         }
+
         // Check if the book exists and has enough stock
-        var book = _dbContext.Books.FirstOrDefault(b => b.BookId == bookId);
+        var book = _dbContext.Books.FirstOrDefault(b => b.BookId == request.BookId);
         if (book == null)
         {
             return NotFound(new { Message = "Book not found." });
         }
 
-        if (book.StockQuantity < quantity)
+        if (book.StockQuantity < request.Quantity)
         {
             return BadRequest(new { Message = "Not enough stock available." });
         }
@@ -50,22 +60,22 @@ public class CartController : ControllerBase
         }
 
         // Check if the book is already in the cart
-        var cartItem = _dbContext.CartItems.FirstOrDefault(ci => ci.CartId == cart.CartId && ci.BookId == bookId);
+        var cartItem = _dbContext.CartItems.FirstOrDefault(ci => ci.CartId == cart.CartId && ci.BookId == request.BookId);
         if (cartItem == null)
         {
             // Add a new cart item
             cartItem = new CartItemModel
             {
                 CartId = cart.CartId,
-                BookId = bookId,
-                Quantity = quantity
+                BookId = request.BookId,
+                Quantity = request.Quantity
             };
             _dbContext.CartItems.Add(cartItem);
         }
         else
         {
             // Update the quantity of the existing cart item
-            cartItem.Quantity += quantity;
+            cartItem.Quantity += request.Quantity;
 
             // Check if the updated quantity exceeds the stock
             if (cartItem.Quantity > book.StockQuantity)
@@ -77,5 +87,86 @@ public class CartController : ControllerBase
         _dbContext.SaveChanges();
 
         return Ok(new { Message = "Book added to cart successfully." });
+    }
+
+    [HttpDelete("remove/{cartItemId}")]
+    [Authorize(Roles = "Member")] // Only members can remove items from their cart
+    public IActionResult RemoveCartItem(Guid cartItemId)
+    {
+        try
+        {
+            // Extract memberId from JWT claims
+            var memberId = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(memberId) || !Guid.TryParse(memberId, out var parsedMemberId))
+            {
+                return Unauthorized(new { Message = "Invalid or missing member ID." });
+            }
+
+            // Find the cart item
+            var cartItem = _dbContext.CartItems
+                .Include(ci => ci.Cart)
+                .FirstOrDefault(ci => ci.CartItemId == cartItemId && ci.Cart.MemberId == parsedMemberId);
+
+            if (cartItem == null)
+            {
+                return NotFound(new { Message = "Cart item not found." });
+            }
+
+            // Remove the cart item
+            _dbContext.CartItems.Remove(cartItem);
+            _dbContext.SaveChanges();
+
+            return Ok(new { Message = "Cart item removed successfully." });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Message = "An error occurred while removing the cart item.", Details = ex.Message });
+        }
+    }
+
+
+    [HttpGet("view")]
+    [Authorize(Roles = "Member")] // Only members can view their cart
+    public IActionResult ViewCart()
+    {
+        try
+        {
+            // Extract memberId from JWT claims
+            var memberId = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(memberId) || !Guid.TryParse(memberId, out var parsedMemberId))
+            {
+                return Unauthorized(new { Message = "Invalid or missing member ID." });
+            }
+
+            // Get the cart for the member
+            var cart = _dbContext.Carts
+                .Where(c => c.MemberId == parsedMemberId)
+                .Select(c => new
+                {
+                    c.CartId,
+                    Items = c.CartItems.Select(ci => new
+                    {
+                        ci.CartItemId,
+                        ci.BookId,
+                        BookTitle = ci.Book.Title, // Include book title
+                        BookImage = ci.Book.CoverImage, // Include book cover image
+                        ci.Quantity,
+                        ci.Book.Price,
+                        TotalPrice = ci.Quantity * ci.Book.Price
+                    }).ToList()
+                })
+                .FirstOrDefault();
+
+            if (cart == null || !cart.Items.Any())
+            {
+                return NotFound(new { Message = "Cart is empty." });
+            }
+
+            return Ok(new { Message = "Cart retrieved successfully.", Cart = cart });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Message = "An error occurred while retrieving the cart.", Details = ex.Message });
+        }
     }
 }

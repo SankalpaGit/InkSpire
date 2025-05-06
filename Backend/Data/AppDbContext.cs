@@ -46,5 +46,11 @@ public class AppDbContext : DbContext
             .WithMany(o => o.OrderItems) // Each Order can have many OrderItems
             .HasForeignKey(oi => oi.OrderId) // Foreign key in OrderItemModel
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<BookmarkModel>()
+            .HasOne(b => b.Book)
+            .WithMany()
+            .HasForeignKey(b => b.BookId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
