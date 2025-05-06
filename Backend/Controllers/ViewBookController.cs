@@ -5,41 +5,41 @@ using Backend.Data;
 
 namespace Backend.Controllers;
 
-[Route("api/[controller]")]
-[ApiController]
-public class ViewBookController : ControllerBase
-{
-    private readonly AppDbContext _dbContext;
-
-    public ViewBookController(AppDbContext dbContext)
+    [Route("api/[controller]")]
+    [ApiController]
+    public class ViewBookController : ControllerBase
     {
-        _dbContext = dbContext;
-    }
+        private readonly AppDbContext _dbContext;
 
-    // Get all books with pagination
-    [HttpGet("all")]
-    public IActionResult GetAllBooks([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 1)
-    {
-        if (pageNumber <= 0 || pageSize <= 0)
+        public ViewBookController(AppDbContext dbContext)
         {
-            return BadRequest(new { Message = "Page number and page size must be greater than zero." });
+            _dbContext = dbContext;
         }
 
-        var books = _dbContext.Books
-            .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
-            .ToList();
-
-        var totalBooks = _dbContext.Books.Count();
-
-        return Ok(new
+        // Get all books with pagination
+        [HttpGet("all")]
+        public IActionResult GetAllBooks([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 1)
         {
-            TotalBooks = totalBooks,
-            PageNumber = pageNumber,
-            PageSize = pageSize,
-            Books = books
-        });
-    }
+            if (pageNumber <= 0 || pageSize <= 0)
+            {
+                return BadRequest(new { Message = "Page number and page size must be greater than zero." });
+            }
+
+            var books = _dbContext.Books
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            var totalBooks = _dbContext.Books.Count();
+
+            return Ok(new
+            {
+                TotalBooks = totalBooks,
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                Books = books
+            });
+        }
 
     // Get a book by ID
     [HttpGet("{id}")]
