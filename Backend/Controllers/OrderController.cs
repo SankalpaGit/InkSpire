@@ -81,30 +81,42 @@ public class OrderController : ControllerBase
     }
 
     // 3. Mark an order as complete
-    [HttpPut("complete/{orderId}")]
-    [Authorize(Roles = "Staff")] // Only staff can access this
-    public IActionResult MarkOrderAsComplete(Guid orderId)
+    [HttpPut("complete-item/{orderItemId}")]
+    [Authorize(Roles = "Staff")] // Only staff can mark order items as completed
+    public IActionResult MarkOrderItemAsComplete(Guid orderItemId)
     {
-        var order = _dbContext.Orders.FirstOrDefault(o => o.OrderId == orderId);
-        if (order == null)
+        try
         {
-            return NotFound(new { Message = "Order not found." });
-        }
+            // Find the order item
+            var orderItem = _dbContext.OrderItems
+                .Include(oi => oi.Order)
+                .FirstOrDefault(oi => oi.OrderItemId == orderItemId);
 
-        if (order.OrderStatus == "Complete")
+            if (orderItem == null)
+            {
+                return NotFound(new { Message = "Order item not found." });
+            }
+
+            if (orderItem.Order == null || orderItem.Order.OrderStatus == "Complete")
+            {
+                return BadRequest(new { Message = "The entire order is already marked as complete." });
+            }
+
+            // Mark the order item as completed
+            orderItem.Order.OrderStatus = "Complete"; // Update the status for the specific item
+            _dbContext.SaveChanges();
+
+            return Ok(new { Message = "Order item marked as complete successfully." });
+        }
+        catch (Exception ex)
         {
-            return BadRequest(new { Message = "Order is already marked as complete." });
+            return StatusCode(500, new { Message = "An error occurred while marking the order item as complete.", Details = ex.Message });
         }
-
-        order.OrderStatus = "Complete";
-        _dbContext.SaveChanges();
-
-        return Ok(new { Message = "Order marked as complete successfully." });
     }
 
     // 4. Search order by ID
     [HttpGet("{orderId}")]
-    [Authorize(Roles = "Staff")] // Only staff can access this
+    [Authorize(Roles = "Staff")] // Both members and staff can view orders
     public IActionResult GetOrderById(Guid orderId)
     {
         var order = _dbContext.Orders
@@ -118,9 +130,12 @@ public class OrderController : ControllerBase
                 o.OrderStatus,
                 Items = o.OrderItems.Select(oi => new
                 {
+                    oi.OrderItemId,
                     oi.BookId,
                     oi.Quantity,
-                    oi.Price
+                    oi.Price,
+                    OrderStatus = oi.Order != null ? oi.Order.OrderStatus : "Unknown", // Include the status of the order item
+                    BookTitle = oi.Book != null ? oi.Book.Title : "Unknown"
                 }).ToList()
             })
             .FirstOrDefault();
@@ -156,9 +171,9 @@ public class OrderController : ControllerBase
                     {
                         ci.BookId,
                         ci.Quantity,
-                        ci.Book.StockQuantity,
-                        ci.Book.Price,
-                        ci.Book.Title
+                        StockQuantity = ci.Book != null ? ci.Book.StockQuantity : 0,
+                        Price = ci.Book != null ? ci.Book.Price : 0,
+                        Title = ci.Book != null ? ci.Book.Title : "Unknown"
                     }).ToList()
                 })
                 .FirstOrDefault();
@@ -243,9 +258,9 @@ public class OrderController : ControllerBase
         }
     }
 
-    [HttpDelete("cancel/{orderId}")]
-    [Authorize(Roles = "Member")] // Only members can cancel their orders
-    public IActionResult CancelOrder(Guid orderId)
+    [HttpDelete("cancel-item/{orderItemId}")]
+    [Authorize(Roles = "Member")] // Only members can cancel their order items
+    public IActionResult CancelOrderItem(Guid orderItemId)
     {
         try
         {
@@ -256,44 +271,47 @@ public class OrderController : ControllerBase
                 return Unauthorized(new { Message = "Invalid or missing member ID." });
             }
 
-            // Find the order
-            var order = _dbContext.Orders
-                .Include(o => o.OrderItems)
-                .FirstOrDefault(o => o.OrderId == orderId && o.MemberId == parsedMemberId);
+            // Find the order item
+            var orderItem = _dbContext.OrderItems
+                .Include(oi => oi.Order)
+                .FirstOrDefault(oi => oi.OrderItemId == orderItemId && oi.Order != null && oi.Order.MemberId == parsedMemberId);
 
-            if (order == null)
+            if (orderItem == null)
             {
-                return NotFound(new { Message = "Order not found." });
+                return NotFound(new { Message = "Order item not found." });
             }
 
-            if (order.OrderStatus != "Pending")
+            if (orderItem.Order == null || orderItem.Order.OrderStatus != "Pending")
             {
-                return BadRequest(new { Message = "Only pending orders can be canceled." });
+                return BadRequest(new { Message = "Only items from pending orders can be canceled." });
             }
 
-            // Restore stock for the canceled items
-            foreach (var item in order.OrderItems)
+            // Restore stock for the canceled item
+            var book = _dbContext.Books.FirstOrDefault(b => b.BookId == orderItem.BookId);
+            if (book != null)
             {
-                var book = _dbContext.Books.FirstOrDefault(b => b.BookId == item.BookId);
-                if (book != null)
-                {
-                    book.StockQuantity += item.Quantity;
-                }
+                book.StockQuantity += orderItem.Quantity;
             }
 
-            // Delete the order and its items
-            _dbContext.OrderItems.RemoveRange(order.OrderItems);
-            _dbContext.Orders.Remove(order);
+            // Remove the order item
+            _dbContext.OrderItems.Remove(orderItem);
+
+            // If the order has no remaining items, delete the order
+            if (!_dbContext.OrderItems.Any(oi => oi.OrderId == orderItem.OrderId))
+            {
+                _dbContext.Orders.Remove(orderItem.Order);
+            }
+
             _dbContext.SaveChanges();
 
-            return Ok(new { Message = "Order canceled successfully." });
+            return Ok(new { Message = "Order item canceled successfully." });
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { Message = "An error occurred while canceling the order.", Details = ex.Message });
+            return StatusCode(500, new { Message = "An error occurred while canceling the order item.", Details = ex.Message });
         }
     }
-
+    // 5. Generate invoice HTML
     private string GenerateInvoice(OrderModel order, List<dynamic> items)
     {
         var invoice = $@"

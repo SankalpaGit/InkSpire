@@ -40,5 +40,11 @@ public class AppDbContext : DbContext
             .WithMany(c => c.CartItems) // Define the relationship from Cart to CartItems
             .HasForeignKey(ci => ci.CartId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<OrderItemModel>()
+            .HasOne(oi => oi.Order) // Each OrderItem belongs to one Order
+            .WithMany(o => o.OrderItems) // Each Order can have many OrderItems
+            .HasForeignKey(oi => oi.OrderId) // Foreign key in OrderItemModel
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
