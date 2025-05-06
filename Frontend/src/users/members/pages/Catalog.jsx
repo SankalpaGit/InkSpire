@@ -57,7 +57,9 @@ const ProductPage = () => {
     }
 
     const url = query
-      ? `http://localhost:5106/api/SearchBook/search?query=${encodeURIComponent(query)}`
+      ? `http://localhost:5106/api/SearchBook/search?query=${encodeURIComponent(
+          query
+        )}`
       : `http://localhost:5106/api/ViewBook/all?pageNumber=1&pageSize=100`;
 
     axios
@@ -68,27 +70,36 @@ const ProductPage = () => {
       })
       .then((response) => {
         console.log("API response:", JSON.stringify(response.data, null, 2));
-        const fetchedBooks = (query ? response.data : response.data.books).map((book) => {
-          const imageUrl = book.coverImage
-            ? `http://localhost:5106/${book.coverImage}`
-            : "/default-cover.jpg";
-          return {
-            id: book.bookId,
-            title: book.title || "Unknown Title",
-            author: book.author || "Unknown Author",
-            price: book.price || 0,
-            rating: book.rating || 0,
-            inStore: book.isAvailableInStore || false,
-            format: book.format === "Softcopy" ? "Paperback" : book.format || "Unknown Format",
-            published: book.publicationDate
-              ? book.publicationDate.split("T")[0]
-              : "2000-01-01",
-            image: imageUrl,
-          };
-        });
+        const fetchedBooks = (query ? response.data : response.data.books).map(
+          (book) => {
+            const imageUrl = book.coverImage
+              ? `http://localhost:5106/${book.coverImage}`
+              : "/default-cover.jpg";
+            return {
+              id: book.bookId,
+              title: book.title || "Unknown Title",
+              author: book.author || "Unknown Author",
+              price: book.price || 0,
+              rating: book.rating || 0,
+              inStore: book.isAvailableInStore || false,
+              format:
+                book.format === "Softcopy"
+                  ? "Paperback"
+                  : book.format || "Unknown Format",
+              published: book.publicationDate
+                ? book.publicationDate.split("T")[0]
+                : "2000-01-01",
+              image: imageUrl,
+            };
+          }
+        );
 
         setBooks(fetchedBooks);
-        setTotalBooks(query ? fetchedBooks.length : response.data.totalBooks || fetchedBooks.length);
+        setTotalBooks(
+          query
+            ? fetchedBooks.length
+            : response.data.totalBooks || fetchedBooks.length
+        );
       })
       .catch((error) => {
         setBooks([]);
@@ -105,8 +116,10 @@ const ProductPage = () => {
   const sortedBooks = books.sort((a, b) => {
     if (sort === "title-asc") return a.title.localeCompare(b.title);
     if (sort === "title-desc") return b.title.localeCompare(a.title);
-    if (sort === "date-asc") return new Date(a.published) - new Date(b.published);
-    if (sort === "date-desc") return new Date(b.published) - new Date(a.published);
+    if (sort === "date-asc")
+      return new Date(a.published) - new Date(b.published);
+    if (sort === "date-desc")
+      return new Date(b.published) - new Date(a.published);
     return 0;
   });
 
@@ -240,10 +253,7 @@ const ProductPage = () => {
                       key={book.id}
                       className="bg-white p-4 rounded-xl shadow hover:shadow-lg transition-all h-fit"
                     >
-                      <Link
-                        to={`/book/${book.id}`}
-                        onClick={book.id}
-                      >
+                      <Link to={`/book/${book.id}`} onClick={book.id}>
                         <img
                           src={book.image}
                           alt={book.title}
@@ -261,17 +271,16 @@ const ProductPage = () => {
                           {book.title}
                         </Link>
                       </h3>
-                      <p className="text-sm text-gray-600 mb-1">{book.author}</p>
+                      <p className="text-sm text-gray-600 mb-1">
+                        {book.author}
+                      </p>
                       <div className="flex items-center justify-between">
                         {renderStars(book.rating)}
                         <p className="text-indigo-600 font-bold mt-1">
                           ${book.price.toFixed(2)}
                         </p>
                       </div>
-                      <button
-                    
-                        className="mt-4 w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
-                      >
+                      <button className="mt-4 w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700 transition-all flex items-center justify-center gap-2">
                         <IoCartOutline className="text-xl" />
                         Add to Cart
                       </button>
