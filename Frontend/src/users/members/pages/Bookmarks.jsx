@@ -57,7 +57,7 @@ const Bookmarks = () => {
               }
             );
             const bookData = bookResponse.data;
-            console.log(`Book Details for ${b.bookId}:`, bookData); 
+            console.log(`Book Details for ${b.bookId}:`, bookData);
             return {
               id: b.bookmarkId || "unknown-" + Math.random(),
               bookId: b.bookId || "",
@@ -67,8 +67,8 @@ const Bookmarks = () => {
                 (b.bookImage && typeof b.bookImage === "string"
                   ? `http://localhost:5106/${b.bookImage.replace(/\\/g, "/")}`
                   : bookData.coverImage && typeof bookData.coverImage === "string"
-                  ? `http://localhost:5106/${bookData.coverImage.replace(/\\/g, "/")}`
-                  : "/default-cover.jpg"),
+                    ? `http://localhost:5106/${bookData.coverImage.replace(/\\/g, "/")}`
+                    : "/default-cover.jpg"),
               price: bookData.price || 0, // Use book details price
               rating: bookData.rating || 0,
               format:
@@ -78,8 +78,8 @@ const Bookmarks = () => {
               published: bookData.publicationDate
                 ? bookData.publicationDate.split("T")[0]
                 : b.createdAt
-                ? b.createdAt.split("T")[0]
-                : "2000-01-01",
+                  ? b.createdAt.split("T")[0]
+                  : "2000-01-01",
               isBookmarked: true,
             };
           } catch (error) {
@@ -110,11 +110,11 @@ const Bookmarks = () => {
         setError("Your session has expired. Please log in again.");
         setTimeout(() => (window.location.href = "/login"), 2000);
       } else if (error.response?.status === 404) {
-        setBookmarks([]); 
+        setBookmarks([]);
       } else {
         setError(
           error.response?.data?.Message ||
-            `Failed to fetch bookmarks: ${error.message}`
+          `Failed to fetch bookmarks: ${error.message}`
         );
       }
     } finally {
@@ -166,7 +166,7 @@ const Bookmarks = () => {
           )
         );
       }
-      fetchBookmarks(); 
+      fetchBookmarks();
     } catch (error) {
       console.error("Toggle Error:", error.response?.data, error.message);
       if (error.response?.status === 401) {
@@ -179,7 +179,7 @@ const Bookmarks = () => {
       } else {
         setError(
           error.response?.data?.Message ||
-            `Failed to toggle bookmark: ${error.message}`
+          `Failed to toggle bookmark: ${error.message}`
         );
       }
     }
@@ -218,7 +218,7 @@ const Bookmarks = () => {
       } else {
         setError(
           error.response?.data?.Message ||
-            `Failed to remove bookmark: ${error.message}`
+          `Failed to remove bookmark: ${error.message}`
         );
       }
     }
@@ -315,21 +315,7 @@ const Bookmarks = () => {
                     {book.title}
                   </h3>
                   <div className="flex gap-2">
-                    <button
-                      onClick={() => handleToggleBookmark(book.bookId, book.isBookmarked)}
-                      className={`p-2 rounded ${
-                        book.isBookmarked
-                          ? "bg-indigo-600 text-white hover:bg-indigo-700"
-                          : "bg-gray-200 text-gray-600 hover:bg-gray-300"
-                      } transition-colors`}
-                      title={book.isBookmarked ? "Remove Bookmark" : "Add Bookmark"}
-                    >
-                      {book.isBookmarked ? (
-                        <FaBookmark className="text-base" />
-                      ) : (
-                        <FaRegBookmark className="text-base" />
-                      )}
-                    </button>
+
                     <button
                       onClick={() => handleDelete(book.bookId)}
                       className="p-2 text-red-500 hover:text-red-700 transition"

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { FaTrashAlt, FaShoppingCart } from "react-icons/fa";
+
 import MemberLayout from "../layout/MemberLayout";
 import axios from "axios";
 
@@ -25,16 +26,12 @@ const Cart = () => {
       const response = await axios.get("http://localhost:5106/api/Cart/view", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log(
-        "GET /api/Cart/view response:",
-        JSON.stringify(response.data, null, 2)
-      );
-      if (!response.data.cart) {
-        console.warn("cart is undefined in response:", response.data);
+
+      if (!response.data.cart || !response.data.cart.items.length) {
         setCartItems([]);
-        setError("Your cart is empty.");
         return;
       }
+
       const items = response.data.cart.items.map((item) => ({
         id: item.cartItemId,
         title: item.bookTitle,
@@ -46,18 +43,9 @@ const Cart = () => {
       }));
       setCartItems(items);
     } catch (error) {
-      console.error("Fetch Cart Error:", error.response?.data, error.message);
       if (error.response?.status === 401) {
         setError("Your session has expired. Please log in again.");
         setTimeout(() => (window.location.href = "/login"), 2000);
-      } else if (error.response?.status === 404) {
-        setCartItems([]);
-        setError("Your cart is empty.");
-      } else {
-        setError(
-          "Failed to load cart: " +
-            (error.response?.data?.message || error.message)
-        );
       }
     } finally {
       setLoading(false);
@@ -82,20 +70,20 @@ const Cart = () => {
         }
       );
       setSuccess(`Removed ${title} from cart!`);
-      fetchCart(); // Refetch to sync with backend
+      fetchCart(); // Refetch to sync
     } catch (error) {
-      console.error("Remove Error:", error.response?.data, error.message);
       if (error.response?.status === 401) {
         setError("Your session has expired. Please log in again.");
         setTimeout(() => (window.location.href = "/login"), 2000);
-      } else if (error.response?.status === 404) {
-        setError("Cart item not found.");
       } else {
         setError(`Failed to remove item: ${error.message}`);
       }
     }
-    setTimeout(() => setError(""), 3000);
-    setTimeout(() => setSuccess(""), 3000);
+
+    setTimeout(() => {
+      setError("");
+      setSuccess("");
+    }, 3000);
   };
 
   const updateQuantity = (id, delta) => {
@@ -119,13 +107,54 @@ const Cart = () => {
   const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   let discountPercent = 0;
-  if (totalQuantity >= 10) {
-    discountPercent = 10;
-  } else if (totalQuantity >= 5) {
-    discountPercent = 5;
-  }
+  if (totalQuantity >= 10) discountPercent = 10;
+  else if (totalQuantity >= 5) discountPercent = 5;
+
   const discountAmount = (subtotal * discountPercent) / 100;
   const total = subtotal - discountAmount;
+
+  const handleCheckout = async () => {
+    if (!window.confirm("Are you sure you want to checkout now?")) return;
+
+    setError("");
+    setSuccess("");
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setError("Please log in to proceed with checkout.");
+      setTimeout(() => (window.location.href = "/login"), 2000);
+      return;
+    }
+
+    try {
+      await axios.post(
+        "http://localhost:5106/api/Order/checkout",
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setSuccess("Checkout successful!");
+      fetchCart(); // Refresh cart to empty it
+    } catch (error) {
+      if (error.response?.status === 401) {
+        setError("Your session has expired. Please log in again.");
+        setTimeout(() => (window.location.href = "/login"), 2000);
+      } else {
+        setError(
+          error.response?.data?.message ||
+          "An error occurred during checkout. Please try again."
+        );
+      }
+    }
+
+    setTimeout(() => {
+      setError("");
+      setSuccess("");
+    }, 3000);
+  };
 
   return (
     <MemberLayout>
@@ -144,131 +173,131 @@ const Cart = () => {
             {success}
           </p>
         )}
-        {loading && (
+        {loading ? (
           <p className="text-gray-600 text-center">Loading cart...</p>
-        )}
-        {!loading && cartItems.length === 0 ? (
-          <p className="text-gray-600 text-center mt-20 text-lg">
-            Your cart is empty.
-          </p>
-        ) : (
-          !loading && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Left: Cart Items */}
-              <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-md max-h-[600px] overflow-y-auto">
-                <h3 className="text-xl font-semibold mb-6 text-gray-800">
-                  Cart Items ({cartItems.length})
-                </h3>
+        ) : cartItems.length === 0 ? (
+          <div className="text-center mt-20 text-gray-600">
+            <FaShoppingCart className="text-9xl  text-red-400 mx-auto mb-4 " />
+            <p className="text-lg">Your cart is empty.</p>
+          </div>
 
-                {cartItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex justify-between items-start border-b border-gray-200 py-6"
-                  >
-                    {/* Left: Image + Info + Quantity */}
-                    <div className="flex gap-4">
-                      <img
-                        src={item.image}
-                        alt={item.title}
-                        className="w-16 h-20 object-contain rounded shadow-inner"
-                        onError={(e) => {
-                          e.target.src = "/default-cover.jpg";
-                        }}
-                      />
-                      <div>
-                        <h4 className="font-semibold text-gray-800 text-lg">
-                          {item.title}
-                        </h4>
-                        <div className="flex items-center mt-3 border rounded overflow-hidden w-fit">
-                          <button
-                            onClick={() => updateQuantity(item.id, -1)}
-                            className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-lg"
-                          >
-                            -
-                          </button>
-                          <span className="px-4 py-1 text-gray-700 font-semibold">
-                            {item.quantity}
-                          </span>
-                          <button
-                            onClick={() => updateQuantity(item.id, 1)}
-                            className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-lg"
-                          >
-                            +
-                          </button>
-                        </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Cart Items */}
+            <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-md max-h-[600px] overflow-y-auto">
+              <h3 className="text-xl font-semibold mb-6 text-gray-800">
+                Cart Items ({cartItems.length})
+              </h3>
+
+              {cartItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex justify-between items-start border-b border-gray-200 py-6"
+                >
+                  <div className="flex gap-4">
+                    <img
+                      src={item.image}
+                      alt={item.title}
+                      className="w-16 h-20 object-contain rounded shadow-inner"
+                      onError={(e) => {
+                        e.target.src = "/default-cover.jpg";
+                      }}
+                    />
+                    <div>
+                      <h4 className="font-semibold text-gray-800 text-lg">
+                        {item.title}
+                      </h4>
+                      <div className="flex items-center mt-3 border rounded overflow-hidden w-fit">
+                        <button
+                          onClick={() => updateQuantity(item.id, -1)}
+                          className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-lg"
+                        >
+                          -
+                        </button>
+                        <span className="px-4 py-1 text-gray-700 font-semibold">
+                          {item.quantity}
+                        </span>
+                        <button
+                          onClick={() => updateQuantity(item.id, 1)}
+                          className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-lg"
+                        >
+                          +
+                        </button>
                       </div>
                     </div>
-
-                    {/* Right: Price and Remove */}
-                    <div className="flex flex-col items-end justify-between h-full">
-                      <p className="font-semibold text-indigo-600 text-lg">
-                        ${(item.price * item.quantity).toFixed(2)}
-                      </p>
-                      <button
-                        onClick={() => handleRemoveItem(item.id, item.title)}
-                        className="text-red-500 hover:text-red-700 flex items-center gap-1 text-sm mt-4"
-                      >
-                        <FaTrashAlt /> Remove
-                      </button>
-                    </div>
                   </div>
-                ))}
-              </div>
 
-              {/* Right: Summary */}
-              <div className="bg-white p-6 rounded-xl shadow-md h-fit">
-                <h3 className="text-xl font-semibold mb-6 text-gray-800">
-                  Order Summary
-                </h3>
-                <div className="flex justify-between mb-2 text-gray-700">
-                  <span>Subtotal</span>
-                  <span>${subtotal.toFixed(2)}</span>
-                </div>
-                {discountPercent > 0 && (
-                  <div className="flex justify-between mb-2 text-gray-700">
-                    <span>Discount ({discountPercent}%)</span>
-                    <span className="text-red-600">
-                      - ${discountAmount.toFixed(2)}
-                    </span>
-                  </div>
-                )}
-                <hr className="my-4" />
-                <div className="flex justify-between mb-4 font-semibold text-gray-900 text-lg">
-                  <span>Total</span>
-                  <span>${total.toFixed(2)}</span>
-                </div>
-
-                {discountPercent > 0 && (
-                  <p className="text-sm text-green-600 mb-4">
-                    🎉 You've unlocked a {discountPercent}% discount for
-                    borrowing {totalQuantity} books!
-                  </p>
-                )}
-
-                <div className="mb-6">
-                  <label className="block mb-2 text-gray-600 text-sm">
-                    Promo Code
-                  </label>
-                  <div className="flex">
-                    <input
-                      type="text"
-                      value={promoCode}
-                      onChange={(e) => setPromoCode(e.target.value)}
-                      className="flex-1 border border-gray-300 rounded-l px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                      placeholder="Enter code"
-                    />
-                    <button className="bg-indigo-600 text-white px-4 rounded-r hover:bg-indigo-700 text-sm">
-                      Apply
+                  <div className="flex flex-col items-end justify-between h-full">
+                    <p className="font-semibold text-indigo-600 text-lg">
+                      ${(item.price * item.quantity).toFixed(2)}
+                    </p>
+                    <button
+                      onClick={() => handleRemoveItem(item.id, item.title)}
+                      className="text-red-500 hover:text-red-700 flex items-center gap-1 text-sm mt-4"
+                    >
+                      <FaTrashAlt /> Remove
                     </button>
                   </div>
                 </div>
-
-                <button className="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 font-semibold text-sm flex items-center justify-center gap-2">
-                  <FaShoppingCart /> Checkout
-                </button>
-              </div>
+              ))}
             </div>
-          )
+
+            {/* Order Summary */}
+            <div className="bg-white p-6 rounded-xl shadow-md h-fit">
+              <h3 className="text-xl font-semibold mb-6 text-gray-800">
+                Order Summary
+              </h3>
+              <div className="flex justify-between mb-2 text-gray-700">
+                <span>Subtotal</span>
+                <span>${subtotal.toFixed(2)}</span>
+              </div>
+              {discountPercent > 0 && (
+                <div className="flex justify-between mb-2 text-gray-700">
+                  <span>Discount ({discountPercent}%)</span>
+                  <span className="text-red-600">
+                    - ${discountAmount.toFixed(2)}
+                  </span>
+                </div>
+              )}
+              <hr className="my-4" />
+              <div className="flex justify-between mb-4 font-semibold text-gray-900 text-lg">
+                <span>Total</span>
+                <span>${total.toFixed(2)}</span>
+              </div>
+
+              {discountPercent > 0 && (
+                <p className="text-sm text-green-600 mb-4">
+                  🎉 You've unlocked a {discountPercent}% discount for borrowing{" "}
+                  {totalQuantity} books!
+                </p>
+              )}
+
+              <div className="mb-6">
+                <label className="block mb-2 text-gray-600 text-sm">
+                  Promo Code
+                </label>
+                <div className="flex">
+                  <input
+                    type="text"
+                    value={promoCode}
+                    onChange={(e) => setPromoCode(e.target.value)}
+                    className="flex-1 border border-gray-300 rounded-l px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                    placeholder="Enter code"
+                  />
+                  <button className="bg-indigo-600 text-white px-4 rounded-r hover:bg-indigo-700 text-sm">
+                    Apply
+                  </button>
+                </div>
+              </div>
+
+              <button
+                onClick={handleCheckout}
+                className="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 font-semibold text-sm flex items-center justify-center gap-2"
+              >
+                <FaShoppingCart /> Checkout
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </MemberLayout>
