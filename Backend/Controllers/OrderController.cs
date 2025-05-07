@@ -49,37 +49,6 @@ public class OrderController : ControllerBase
         return Ok(new { Message = "Orders retrieved successfully.", Orders = orders });
     }
 
-    // 2. View pending orders
-    [HttpGet("pending")]
-    [Authorize(Roles = "Staff")] // Only staff can access this
-    public IActionResult GetPendingOrders()
-    {
-        var pendingOrders = _dbContext.Orders
-            .Where(o => o.OrderStatus == "Pending")
-            .Select(o => new
-            {
-                o.OrderId,
-                o.MemberId,
-                o.TotalPrice,
-                o.OrderDate,
-                o.OrderStatus,
-                Items = o.OrderItems.Select(oi => new
-                {
-                    oi.BookId,
-                    oi.Quantity,
-                    oi.Price
-                }).ToList()
-            })
-            .ToList();
-
-        if (!pendingOrders.Any())
-        {
-            return NotFound(new { Message = "No pending orders found." });
-        }
-
-        return Ok(new { Message = "Pending orders retrieved successfully.", Orders = pendingOrders });
-    }
-
     // 3. Mark an order as complete
     [HttpPut("complete-item/{orderItemId}")]
     [Authorize(Roles = "Staff")] // Only staff can mark order items as completed

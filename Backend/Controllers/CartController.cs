@@ -105,7 +105,7 @@ public class CartController : ControllerBase
             // Find the cart item
             var cartItem = _dbContext.CartItems
                 .Include(ci => ci.Cart)
-                .FirstOrDefault(ci => ci.CartItemId == cartItemId && ci.Cart.MemberId == parsedMemberId);
+                .FirstOrDefault(ci => ci.CartItemId == cartItemId && ci.Cart != null && ci.Cart.MemberId == parsedMemberId);
 
             if (cartItem == null)
             {
@@ -148,11 +148,11 @@ public class CartController : ControllerBase
                     {
                         ci.CartItemId,
                         ci.BookId,
-                        BookTitle = ci.Book.Title, // Include book title
-                        BookImage = ci.Book.CoverImage, // Include book cover image
+                        BookTitle = ci.Book != null ? ci.Book.Title : "Unknown Title", // Include book title
+                        BookImage = ci.Book != null ? ci.Book.CoverImage : null, // Include book cover image
                         ci.Quantity,
-                        ci.Book.Price,
-                        TotalPrice = ci.Quantity * ci.Book.Price
+                        Price = ci.Book != null ? ci.Book.Price : 0,
+                        TotalPrice = ci.Book != null ? ci.Quantity * ci.Book.Price : 0
                     }).ToList()
                 })
                 .FirstOrDefault();
