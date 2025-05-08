@@ -21,6 +21,8 @@ public class AppDbContext : DbContext
 
     public DbSet<OrderItemModel> OrderItems { get; set; }
 
+    public DbSet<AnnouncementModel> Announcements { get; set; } 
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

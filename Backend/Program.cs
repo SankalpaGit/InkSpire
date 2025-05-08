@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
+using Backend.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -47,11 +48,12 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // Enable CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddPolicy("AllowSpecificOrigins", policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.WithOrigins("http://localhost:5173")
               .AllowAnyHeader()
-              .AllowAnyMethod();
+              .AllowAnyMethod()
+              .AllowCredentials();
     });
 });
 
@@ -75,6 +77,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+// Add SignalR service
+builder.Services.AddSignalR();
+
+// Register the Announcemnet Cleaner service
+builder.Services.AddHostedService<AnnouncementCleanupService>();
+
 // Register builder in app
 var app = builder.Build();
 
@@ -93,9 +101,12 @@ app.UseStaticFiles(new StaticFileOptions
 });
 
 app.UseHttpsRedirection();
-app.UseCors("AllowAll");
+app.UseCors("AllowSpecificOrigins");
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Map SignalR hub
+app.MapHub<AnnouncementHub>("/hubs/announcementHub");
 
 app.MapControllers();
 

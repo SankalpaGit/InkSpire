@@ -18,23 +18,26 @@ public class SaleController : ControllerBase
 
     // Add a sale
     [HttpPost("add")]
-    [Authorize] // Only admins can add sales
+    [Authorize (Roles = "Admin")] // Only admins can add sales
     public IActionResult AddSale([FromBody] SaleModel model)
     {
-        // Validate the sale dates
         if (model.StartDate > model.EndDate)
         {
             return BadRequest(new { Message = "Start date cannot be after the end date." });
         }
 
-        // Add the sale
         model.SaleId = Guid.NewGuid();
+
+        // Enforce UTC before saving
+        model.StartDate = DateTime.SpecifyKind(model.StartDate, DateTimeKind.Utc);
+        model.EndDate = DateTime.SpecifyKind(model.EndDate, DateTimeKind.Utc);
+
         _dbContext.Sales.Add(model);
         _dbContext.SaveChanges();
 
         return Ok(new { Message = "Sale added successfully.", SaleId = model.SaleId });
     }
-
+    
     // Edit a sale
     [HttpPut("edit/{saleId}")]
     [Authorize] // Only admins can edit sales
@@ -72,7 +75,7 @@ public class SaleController : ControllerBase
 
     // Remove expired sales
     [HttpDelete("remove-expired")]
-    [Authorize] // Only admins can remove expired sales
+    [Authorize (Roles = "Admin")] // Only admins can remove expired sales
     public IActionResult RemoveExpiredSales()
     {
         var currentDate = DateTime.UtcNow;
@@ -93,4 +96,5 @@ public class SaleController : ControllerBase
 
         return Ok(new { Message = "Expired sales removed successfully." });
     }
+
 }
