@@ -7,6 +7,8 @@ import gsap from 'gsap';
 const Register = () => {
     const navigate = useNavigate();
     const formRef = useRef();
+    const [messageType, setMessageType] = useState("error");
+
 
     const [formData, setFormData] = useState({
         firstName: '',
@@ -56,6 +58,7 @@ const Register = () => {
                 password: formData.password,
             });
 
+            setMessageType("success");
             setMessage(res.data.message || "Registration successful!");
 
             setTimeout(() => {
@@ -64,9 +67,11 @@ const Register = () => {
             }, 2500);
         } catch (err) {
             setLoading(false);
+            setMessageType("error");
             const errMsg = err.response?.data?.message || "Something went wrong.";
             setMessage(errMsg);
         }
+
     };
 
     return (

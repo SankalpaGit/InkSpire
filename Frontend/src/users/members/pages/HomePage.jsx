@@ -8,7 +8,6 @@ const HomePage = () => {
   return (
     <MemberLayout>
       <div className=" text-gray-800 ">
-
         <Hero />
         <FeaturedBooks />
 
