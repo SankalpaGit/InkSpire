@@ -6,6 +6,9 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using Backend.Services;
+using Microsoft.AspNetCore.SignalR;
+using Backend.Hubs;
+using System.Threading.Tasks;
 namespace Backend.Controllers;
 
 [Route("api/[controller]")]
@@ -13,11 +16,14 @@ namespace Backend.Controllers;
 public class OrderController : ControllerBase
 {
     private readonly AppDbContext _dbContext;
+    private readonly IHubContext<AnnouncementHub> _hubContext;
 
-    public OrderController(AppDbContext dbContext)
+    public OrderController(AppDbContext dbContext, IHubContext<AnnouncementHub> hubContext)
     {
         _dbContext = dbContext;
+        _hubContext = hubContext;
     }
+    
 
     // 1. View all orders
     [HttpGet("all")]
@@ -52,13 +58,14 @@ public class OrderController : ControllerBase
     // 3. Mark an order as complete
     [HttpPut("complete-item/{orderItemId}")]
     [Authorize(Roles = "Staff")] // Only staff can mark order items as completed
-    public IActionResult MarkOrderItemAsComplete(Guid orderItemId)
+    public async Task<IActionResult> MarkOrderItemAsComplete(Guid orderItemId)
     {
         try
         {
             // Find the order item
             var orderItem = _dbContext.OrderItems
                 .Include(oi => oi.Order)
+                .Include(oi => oi.Book)
                 .FirstOrDefault(oi => oi.OrderItemId == orderItemId);
 
             if (orderItem == null)
@@ -73,7 +80,13 @@ public class OrderController : ControllerBase
 
             // Mark the order item as completed
             orderItem.Order.OrderStatus = "Complete"; // Update the status for the specific item
-            _dbContext.SaveChanges();
+            await _dbContext.SaveChangesAsync();
+
+            if (orderItem.Book != null)
+            {
+                var message = $"{orderItem.Quantity} copies of '{orderItem.Book.Title}' have been sold.";
+                await _hubContext.Clients.All.SendAsync("ReceiveAnnouncement", message);
+            }
 
             return Ok(new { Message = "Order item marked as complete successfully." });
         }
