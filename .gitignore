@@ -2,17 +2,13 @@
 
 Backend/bin
 Backend/obj
-Backend/Properties/
 Backend/Migrations/
 Backend/Uploads
 
 
 
 #Frontend gitignore file
-Frontend/public/
 Frontend/node_modules
-Frontend/package-lock.json
-Frontend/package.json
 
 
 .vscode

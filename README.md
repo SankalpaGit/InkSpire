@@ -31,30 +31,53 @@ Follow these steps to set up the project on your local machine:
 ### System Setup
 
 1. **Clone the Repository**:
-   ```bash
+ ```bash
    git clone https://github.com/SankalpaGit/InkSpire.git
+```
 
 2. **Install packages**;
-    cd authorities and then members : **npm install** 
-    cd Backend : **dotnet restore**
+```bash
+    cd Frontend
+    npm install
+    cd Backend 
+    dotnet restore
+```
 
 3. **Update DB Connection String**;
     Navigate to Backend/appsettings.json <br>
     Update your connection String
+```bash
+    "ConnectionStrings": {
+    "PostgreSqlConnection": "Host=localhost;Port=5432;Database=databaseName;Username=dbUserName;Password=yourPass"
+  },
+```
 
 4. **Make Migrations**;
-    dotnet ef migrations add migrationname <br>
+```bash
+    dotnet ef migrations add migrationname
     dotnet ef database update
+```
 
 5. **Running the System**;
-    cd frontend - **npm run dev**
-    cd Backend - **dotnet run** or run the **Program.cs** file
+```bash
+    cd frontend 
+    npm run dev
+```
+```bash
+    cd Backend 
+    dotnet run
+```
+or Run the program.cs file
 
 ## Access the Application
 Frontend: Open **http://localhost:5174** in your browser.
-Backend API: Open **http://localhost:5000/swagger** for API documentation.
+Backend API: Open **http://localhost:5106/swagger/index.html** for API documentation.
 
 -----------------------------------------------------------------------------------
 
 ## 🤝 Team Behind
-
+- **Sankalpa Shrestha (me)** - [GitHub](https://github.com/SankalpaGit)
+- **Sahisha Karki** - [GitHub](https://github.com/SaishaJSX)
+- **Jesish Khadka** - [GitHub](https://github.com/Jesish)
+- **Ujjwal Bhattarai** - [GitHub](https://github.com/Ujjwal-027)
+- **Bibek Chapagain** 
