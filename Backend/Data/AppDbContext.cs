@@ -23,6 +23,8 @@ public class AppDbContext : DbContext
 
     public DbSet<AnnouncementModel> Announcements { get; set; } 
 
+    public DbSet<ReviewModel> Reviews { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
