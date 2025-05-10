@@ -21,6 +21,7 @@ import StaffLogin from './users/staff/pages/StaffLogin'
 import AdminAuth from './users/admin/pages/AdminAuth'
 import BookDetailPage from './users/members/pages/BookDetailPage'
 import ProductPage from './users/members/pages/Catalog'
+import ReviewBook from './users/members/pages/ReviewBook'
 function App() {
 
   return (
@@ -28,6 +29,7 @@ function App() {
       <Route path="/" element={<HomePage />} />
       <Route path="/catalog" element={<ProductPage />} />
       <Route path="/book/:bookId" element={ <BookDetailPage/>} />
+      <Route path="/review/:bookId" element={<ReviewBook/>} />
       <Route path="/bookmarks" element={<Bookmarks />} />
       <Route path="/cart" element={<Cart />} />
       <Route path="/profile" element={<Profile />} />

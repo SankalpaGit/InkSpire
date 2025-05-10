@@ -113,7 +113,7 @@ const BookDetailPage = () => {
       setIsBookmarked(isBookmarked);
       console.log(`Fetched bookmark status for book ${bookId}: ${isBookmarked}`);
     } catch (error) {
-     
+
       setTimeout(() => setBookmarkMessage(""), 3000);
     }
   };
@@ -297,10 +297,19 @@ const BookDetailPage = () => {
                 />
               </div>
               <div className="md:w-2/3 p-6 space-y-6">
-                <div>
+              <div className="flex items-center justify-between">
+                   <div>
                   <h2 className="text-3xl font-bold text-gray-800">{book.title}</h2>
                   <p className="text-lg text-gray-600 mt-1">by {book.author}</p>
                 </div>
+                <Link to={`/review/${bookId}`}>
+                 <button className="w-full sm:w-fit  text-gray-600 py-2 px-3 flex items-center justify-center gap-2 text-lg font-medium">
+                    <FaPlus className="text-lg" />
+                    Add Review
+                  </button>
+                  </Link>
+              </div>
+               
                 <div className="flex items-center gap-4 flex-wrap">
                   {renderStars(book.rating)}
                   <p className="text-2xl font-semibold text-indigo-600">
@@ -381,11 +390,10 @@ const BookDetailPage = () => {
                   </button>
                   <button
                     onClick={handleToggleBookmark}
-                    className={`p-3 rounded-lg flex items-center justify-center ${
-                      isBookmarked
+                    className={`p-3 rounded-lg flex items-center justify-center ${isBookmarked
                         ? "bg-indigo-600 text-white hover:bg-indigo-700"
                         : "bg-gray-200 text-gray-600 hover:bg-gray-300"
-                    } transition-colors ${isBookmarkLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                      } transition-colors ${isBookmarkLoading ? "opacity-50 cursor-not-allowed" : ""}`}
                     title={isBookmarked ? "Remove Bookmark" : "Add Bookmark"}
                     disabled={isBookmarkLoading}
                   >
@@ -395,6 +403,7 @@ const BookDetailPage = () => {
                       <FaRegBookmark className="text-xl" />
                     )}
                   </button>
+                 
                 </div>
               </div>
             </div>
