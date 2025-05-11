@@ -49,12 +49,7 @@ const ProductPage = () => {
     setError("");
 
     const token = localStorage.getItem("token");
-    if (!token) {
-      setError("Please log in to browse books.");
-      setTimeout(() => (window.location.href = "/login"), 2000);
-      setLoading(false);
-      return;
-    }
+    
 
     const url = query
       ? `http://localhost:5106/api/SearchBook/search?query=${encodeURIComponent(

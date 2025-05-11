@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { FaUser, FaEye, FaEyeSlash } from 'react-icons/fa';
 
@@ -123,10 +123,13 @@ const Login = () => {
 
         <p className="text-center text-sm text-gray-600">
           Don't have an account?{" "}
-          <a href="/register" className="text-[#112742] font-medium hover:underline">
-            Register
-          </a>
         </p>
+        <Link to="/register" className="text-[#112742] font-medium hover:underline">
+          <p className="text-[#112742] font-medium hover:underline">
+            Register
+          </p>
+        </Link>
+
       </div>
 
       <div className="hidden md:block w-1/2">
