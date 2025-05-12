@@ -1,22 +1,58 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { FaUsers, FaBook, FaShoppingCart, FaBoxes } from 'react-icons/fa';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import AdminLayout from '../layout/AdminLayout';
+import axios from 'axios';
 
 const Dashboard = () => {
-    const stats = [
-        { label: 'Staff', value: 12, icon: <FaUsers />, color: 'bg-blue-600' },
-        { label: 'Total Books', value: 1345, icon: <FaBook />, color: 'bg-indigo-600' },
-        { label: 'Orders', value: 238, icon: <FaShoppingCart />, color: 'bg-green-600' },
-        { label: 'Stock Left', value: 312, icon: <FaBoxes />, color: 'bg-yellow-500' },
-    ];
+    const [dashboardStats, setDashboardStats] = useState(null);
+    const [salesChartData, setSalesChartData] = useState([]);
 
-    const chartData = [
-        { month: 'Jan', orders: 50 },
-        { month: 'Feb', orders: 75 },
-        { month: 'Mar', orders: 100 },
-        { month: 'Apr', orders: 60 },
-        { month: 'May', orders: 90 },
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+
+        if (!token) {
+            console.warn("No token found. Redirect to login.");
+            return;
+        }
+
+        const headers = { Authorization: `Bearer ${token}` };
+
+        // Fetch stats
+        axios.get('http://localhost:5106/api/Stats/dashboard', { headers })
+            .then((res) => {
+                setDashboardStats(res.data);
+            })
+            .catch((err) => {
+                console.error("Failed to fetch dashboard stats:", err);
+            });
+
+        // Fetch chart data
+        axios.get('http://localhost:5106/api/Stats/sales/day', { headers })
+            .then((res) => {
+                const transformed = res.data.data.map(item => {
+                    const date = new Date(item.date);
+                    const label = date.toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                    });
+                    return {
+                        date: label,
+                        sales: item.totalSales,
+                    };
+                });
+                setSalesChartData(transformed);
+            })
+            .catch((err) => {
+                console.error("Failed to fetch sales chart data:", err);
+            });
+    }, []);
+
+    const stats = [
+        { label: 'Staff', value: dashboardStats?.totalStaff ?? 0, icon: <FaUsers />, color: 'bg-blue-600' },
+        { label: 'Total Books', value: dashboardStats?.totalBooks ?? 0, icon: <FaBook />, color: 'bg-indigo-600' },
+        { label: 'Total Sales ($)', value: dashboardStats?.totalSalesAmount?.toFixed(2) ?? '0.00', icon: <FaShoppingCart />, color: 'bg-green-600' },
+        { label: 'Stock Left', value: dashboardStats?.totalAvailableQuantity ?? 0, icon: <FaBoxes />, color: 'bg-yellow-500' },
     ];
 
     return (
@@ -40,21 +76,23 @@ const Dashboard = () => {
                     ))}
                 </div>
 
-                <div className='flex flex-col-2 gap-4'>
-                    {/* Analytics Chart */}
-                    <div className="bg-white p-6 rounded-xl shadow-md w-8/12">
-                        <h2 className="text-xl font-semibold text-[#112742] mb-4">Monthly Order Analytics</h2>
+                <div className="flex flex-col lg:flex-row gap-4">
+                    {/* Sales Chart */}
+                    <div className="bg-white p-6 rounded-xl shadow-md w-full lg:w-8/12">
+                        <h2 className="text-xl font-semibold text-[#112742] mb-4">Daily Sales</h2>
                         <ResponsiveContainer width="100%" height={300}>
-                            <BarChart data={chartData}>
+                            <BarChart data={salesChartData}>
                                 <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="month" />
+                                <XAxis dataKey="date" />
                                 <YAxis allowDecimals={false} />
                                 <Tooltip />
-                                <Bar dataKey="orders" fill="#6366F1" radius={[6, 6, 0, 0]} />
+                                <Bar dataKey="sales" fill="#6366F1" radius={[6, 6, 0, 0]} />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
-                    <div className="flex-row w-4/12">
+
+                    {/* Action Buttons */}
+                    <div className="flex flex-col w-full lg:w-4/12">
                         <button
                             onClick={() => window.location.href = '/admin/orders'}
                             className="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg shadow-md transition w-full mb-4"
