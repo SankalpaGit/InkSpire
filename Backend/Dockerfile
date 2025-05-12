@@ -9,6 +9,8 @@ RUN dotnet publish Backend.csproj -c Release -o /App/publish
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /App
 COPY --from=build /App/publish .
+RUN mkdir -p /App/Uploads
+
 EXPOSE 10000
 ENV PORT=10000
 ENV ASPNETCORE_URLS=http://+:${PORT}

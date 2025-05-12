@@ -23,9 +23,9 @@ public class OrderController : ControllerBase
         _dbContext = dbContext;
         _hubContext = hubContext;
     }
-    
 
-    // 1. View all orders
+
+    // View all orders for staff 
     [HttpGet("all")]
     [Authorize(Roles = "Staff")] // Only staff can access this
     public IActionResult GetAllOrders()
@@ -55,7 +55,7 @@ public class OrderController : ControllerBase
         return Ok(new { Message = "Orders retrieved successfully.", Orders = orders });
     }
 
-    // 3. Mark an order as complete
+    // Mark an order as complete
     [HttpPut("complete-item/{orderItemId}")]
     [Authorize(Roles = "Staff")] // Only staff can mark order items as completed
     public async Task<IActionResult> MarkOrderItemAsComplete(Guid orderItemId)
@@ -73,14 +73,29 @@ public class OrderController : ControllerBase
                 return NotFound(new { Message = "Order item not found." });
             }
 
-            if (orderItem.Order == null || orderItem.Order.OrderStatus == "Complete")
+            if (orderItem.Status == "Complete")
             {
-                return BadRequest(new { Message = "The entire order is already marked as complete." });
+                return BadRequest(new { Message = "This order item is already marked as complete." });
             }
 
-            // Mark the order item as completed
-            orderItem.Order.OrderStatus = "Complete"; // Update the status for the specific item
+            // Mark the specific order item as complete
+            orderItem.Status = "Complete";
             await _dbContext.SaveChangesAsync();
+
+            // Check if all items in the order are complete
+            var allItemsComplete = _dbContext.OrderItems
+                .Where(oi => oi.OrderId == orderItem.OrderId)
+                .All(oi => oi.Status == "Complete");
+
+            if (allItemsComplete)
+            {
+                // Mark the entire order as complete
+                if (orderItem.Order != null)
+                {
+                    orderItem.Order.OrderStatus = "Complete";
+                    await _dbContext.SaveChangesAsync();
+                }
+            }
 
             if (orderItem.Book != null)
             {
@@ -96,7 +111,7 @@ public class OrderController : ControllerBase
         }
     }
 
-    // 4. Search order by ID
+    // Search order by ID or claim code
     [HttpGet("{orderId}")]
     [Authorize(Roles = "Staff")] // Both members and staff can view orders
     public IActionResult GetOrderById(Guid orderId)
@@ -130,6 +145,7 @@ public class OrderController : ControllerBase
         return Ok(new { Message = "Order retrieved successfully.", Order = order });
     }
 
+    // Checkout process that is ordering from the cart
     [HttpPost("checkout")]
     [Authorize(Roles = "Member")] // Only members can checkout
     public IActionResult Checkout()
@@ -240,6 +256,54 @@ public class OrderController : ControllerBase
         }
     }
 
+    [HttpGet("my-orders")]
+    [Authorize(Roles = "Member")] // Only members can view their own orders
+    public IActionResult GetMyOrders()
+    {
+        try
+        {
+            // Extract memberId from JWT claims
+            var memberId = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(memberId) || !Guid.TryParse(memberId, out var parsedMemberId))
+            {
+                return Unauthorized(new { Message = "Invalid or missing member ID." });
+            }
+
+            // Fetch orders for the logged-in member
+            var orders = _dbContext.Orders
+                .Where(o => o.MemberId == parsedMemberId)
+                .Select(o => new
+                {
+                    o.OrderId,
+                    o.TotalPrice,
+                    o.OrderDate,
+                    o.OrderStatus,
+                    Items = o.OrderItems.Select(oi => new
+                    {
+                        oi.OrderItemId,
+                        oi.BookId,
+                        oi.Quantity,
+                        oi.Price,
+                        oi.Status,
+                        BookTitle = oi.Book != null ? oi.Book.Title : "Unknown"
+                    }).ToList()
+                })
+                .ToList();
+
+            if (!orders.Any())
+            {
+                return NotFound(new { Message = "No orders found for the logged-in member." });
+            }
+
+            return Ok(new { Message = "Orders retrieved successfully.", Orders = orders });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Message = "An error occurred while retrieving orders.", Details = ex.Message });
+        }
+    }
+
+    // Cancel an order item by the member to their order
     [HttpDelete("cancel-item/{orderItemId}")]
     [Authorize(Roles = "Member")] // Only members can cancel their order items
     public IActionResult CancelOrderItem(Guid orderItemId)
@@ -293,7 +357,8 @@ public class OrderController : ControllerBase
             return StatusCode(500, new { Message = "An error occurred while canceling the order item.", Details = ex.Message });
         }
     }
-    // 5. Generate invoice HTML
+
+    // function or method to Generate invoice HTML
     private string GenerateInvoice(OrderModel order, List<dynamic> items)
     {
         var invoice = $@"

@@ -23,6 +23,10 @@ public class OrderItemModel
     [Required]
     public decimal Price { get; set; } // Price of the book at the time of the order
 
-    public virtual OrderModel ? Order { get; set; } // Navigation property for the order
-    public virtual BookModel ? Book { get; set; } // Navigation property for the book
+    [Required]
+    [StringLength(20)]
+    public string Status { get; set; } = "Pending";
+
+    public virtual OrderModel? Order { get; set; } // Navigation property for the order
+    public virtual BookModel? Book { get; set; } // Navigation property for the book
 }
