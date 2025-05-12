@@ -1,15 +1,7 @@
-import React, { useState } from 'react';
-import { FiMail, FiUser, FiCalendar, FiEdit, FiLock, FiHome } from 'react-icons/fi';
+import React, { useState, useEffect } from 'react';
+import { FiMail, FiUser, FiCalendar, FiEdit, FiLock } from 'react-icons/fi';
 import MemberLayout from '../layout/MemberLayout';
-
-const sampleUser = {
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    joined: '2023-01-15',
-    membership: 'Gold',
-    preferredFormat: 'Hardcover',
-    address: '123 Library Street, Booktown',
-};
+import axios from 'axios';
 
 const initialOrders = [
     {
@@ -33,7 +25,33 @@ const initialOrders = [
 ];
 
 const Profile = () => {
+    const [user, setUser] = useState(null);
     const [orders, setOrders] = useState(initialOrders);
+    const [showPasswordModal, setShowPasswordModal] = useState(false);
+    const [newPassword, setNewPassword] = useState('');
+
+    const token = localStorage.getItem('token');
+
+    useEffect(() => {
+        if (!token) return;
+
+        axios.get('http://localhost:5106/api/MemberProfile/details', {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        })
+        .then((res) => {
+            const { firstName, lastName, email, joined } = res.data;
+            setUser({
+                name: `${firstName} ${lastName}`,
+                email,
+                joined,
+            });
+        })
+        .catch((err) => {
+            console.error('Error fetching profile:', err);
+        });
+    }, [token]);
 
     const cancelOrder = (id) => {
         setOrders(prev =>
@@ -56,6 +74,25 @@ const Profile = () => {
         }
     };
 
+    const handlePasswordChange = () => {
+        axios.put('http://localhost:5106/api/MemberProfile/change-password', {
+            newPassword: newPassword
+        }, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        })
+        .then(() => {
+            alert('Password changed successfully.');
+            setShowPasswordModal(false);
+            setNewPassword('');
+        })
+        .catch((err) => {
+            console.error('Failed to change password:', err);
+            alert('Failed to change password.');
+        });
+    };
+
     return (
         <MemberLayout>
             <div className="min-h-screen bg-gray-50 p-6">
@@ -66,41 +103,33 @@ const Profile = () => {
                     <div className="bg-white p-6 rounded-xl shadow-md space-y-5">
                         <h3 className="text-xl font-semibold text-gray-800 mb-4">Profile Information</h3>
 
-                        <div className="space-y-3 text-gray-700 text-sm">
-                            <div className="flex items-center gap-2">
-                                <FiUser className="text-indigo-600" />
-                                <span><span className="font-medium">Name:</span> {sampleUser.name}</span>
+                        {user ? (
+                            <div className="space-y-3 text-gray-700 text-sm">
+                                <div className="flex items-center gap-2">
+                                    <FiUser className="text-indigo-600" />
+                                    <span><span className="font-medium">Name:</span> {user.name}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <FiMail className="text-indigo-600" />
+                                    <span><span className="font-medium">Email:</span> {user.email}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <FiCalendar className="text-indigo-600" />
+                                    <span><span className="font-medium">Joined:</span> {new Date(user.joined).toDateString()}</span>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <FiMail className="text-indigo-600" />
-                                <span><span className="font-medium">Email:</span> {sampleUser.email}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <FiCalendar className="text-indigo-600" />
-                                <span><span className="font-medium">Joined:</span> {new Date(sampleUser.joined).toDateString()}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <FiHome className="text-indigo-600" />
-                                <span><span className="font-medium">Address:</span> {sampleUser.address}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <span className="inline-block px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
-                                    {sampleUser.membership} Member
-                                </span>
-                                <span className="inline-block px-2 py-1 text-xs font-medium bg-indigo-100 text-indigo-700 rounded-full">
-                                    Prefers {sampleUser.preferredFormat}
-                                </span>
-                            </div>
-                        </div>
+                        ) : (
+                            <p className="text-sm text-gray-500">Loading profile...</p>
+                        )}
 
                         <div className="flex flex-col gap-2 pt-4 border-t mt-4">
                             <button className="flex items-center gap-2 text-indigo-600 hover:underline text-sm">
                                 <FiEdit /> Update Profile
                             </button>
-                            <button className="flex items-center gap-2 text-indigo-600 hover:underline text-sm">
-                                <FiMail /> Change Email
-                            </button>
-                            <button className="flex items-center gap-2 text-indigo-600 hover:underline text-sm">
+                            <button
+                                onClick={() => setShowPasswordModal(true)}
+                                className="flex items-center gap-2 text-indigo-600 hover:underline text-sm"
+                            >
                                 <FiLock /> Change Password
                             </button>
                         </div>
@@ -131,7 +160,6 @@ const Profile = () => {
                                                 <span className={`inline-block px-2 py-1 text-xs rounded-full ${getStatusClasses(order.status)}`}>
                                                     {order.status}
                                                 </span>
-
                                                 {order.status === 'Pending' && (
                                                     <button
                                                         onClick={() => cancelOrder(order.id)}
@@ -148,6 +176,36 @@ const Profile = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Password Change Modal */}
+            {showPasswordModal && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+                    <div className="bg-white p-6 rounded-lg w-80 shadow-lg space-y-4">
+                        <h3 className="text-lg font-semibold text-gray-800">Change Password</h3>
+                        <input
+                            type="password"
+                            placeholder="Enter new password"
+                            className="w-full border border-gray-300 px-3 py-2 rounded"
+                            value={newPassword}
+                            onChange={e => setNewPassword(e.target.value)}
+                        />
+                        <div className="flex justify-end space-x-2">
+                            <button
+                                onClick={() => setShowPasswordModal(false)}
+                                className="px-4 py-1 text-sm text-gray-600"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handlePasswordChange}
+                                className="px-4 py-1 text-sm text-white bg-indigo-600 rounded"
+                            >
+                                Save
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </MemberLayout>
     );
 };
