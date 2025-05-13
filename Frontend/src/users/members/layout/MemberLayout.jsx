@@ -47,39 +47,37 @@ const MemberLayout = ({ children }) => {
     };
   }, []);
 
-  // Infinite Marquee GSAP Animation
   useEffect(() => {
-    if (!marqueeContainerRef.current || !marqueeContentRef.current) return;
+  if (!marqueeContainerRef.current || !marqueeContentRef.current) return;
 
-    const containerWidth = marqueeContainerRef.current.offsetWidth;
-    const contentWidth = marqueeContentRef.current.scrollWidth;
+  const container = marqueeContainerRef.current;
+  const content = marqueeContentRef.current;
 
-    // Ensure content is wide enough to loop seamlessly
-    if (contentWidth < containerWidth) {
-      // If content is too short, duplicate it to ensure continuous scrolling
-      marqueeContentRef.current.innerHTML += marqueeContentRef.current.innerHTML;
-    }
+  const containerWidth = container.offsetWidth;
+  const contentWidth = content.scrollWidth;
 
-    // Set initial position
-    gsap.set(marqueeContentRef.current, { x: 0 });
+  if (contentWidth < containerWidth) {
+    content.innerHTML += content.innerHTML;
+  }
 
-    // Calculate the distance to animate (width of one set of content)
-    const animationDistance = contentWidth;
+  gsap.set(content, { x: containerWidth });
 
-    const anim = gsap.to(marqueeContentRef.current, {
-      x: -animationDistance,
-      duration: animationDistance / 200, // Adjust speed (50px per second, tweak as needed)
-      ease: 'linear',
-      repeat: -1,
-      modifiers: {
-        x: (x) => `${parseFloat(x) % animationDistance}px`, // Seamless looping
-      },
-    });
+  const animationDistance = contentWidth + containerWidth;
 
-    return () => {
-      anim.kill();
-    };
-  }, [persistedAnnouncements]);
+  const anim = gsap.to(content, {
+    x: -contentWidth,
+    duration: animationDistance / 100,
+    ease: 'linear',
+    repeat: -1,
+    modifiers: {
+      x: (x) => `${parseFloat(x) % animationDistance}px`,
+    },
+  });
+
+  return () => {
+    anim.kill();
+  };
+}, [persistedAnnouncements]);
 
   return (
     <>

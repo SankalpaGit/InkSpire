@@ -332,7 +332,7 @@ const Cart = () => {
 
         {/* Show loader when processing checkout */}
         {isProcessingCheckout && (
-          <div className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-50 backdrop-blur-sm">
+          <div className="fixed inset-0 flex justify-center items-center bg-opacity-50 backdrop-blur-sm">
             <div className="flex flex-col justify-center items-center">
               {/* Loader */}
               <div className="animate-spin rounded-full border-t-4 border-indigo-600 w-16 h-16 mb-4"></div>

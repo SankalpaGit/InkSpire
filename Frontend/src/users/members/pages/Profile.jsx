@@ -257,7 +257,7 @@ const Profile = () => {
 
             {/* Cancel Confirmation Modal */}
             {showCancelModal && itemToCancel && (
-            <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+            <div className="fixed inset-0 flex items-center backdrop-blur-md justify-center bg-opacity-40 z-50">
                 <div className="bg-white p-6 rounded-lg w-80 shadow-lg space-y-4">
                     <h3 className="text-lg font-semibold text-gray-800">Are you sure you want to cancel this item?</h3>
                     <div className="flex justify-end space-x-2">

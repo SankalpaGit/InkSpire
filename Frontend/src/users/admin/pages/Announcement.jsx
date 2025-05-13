@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import gsap from 'gsap';
+import axios from 'axios';
 import AdminLayout from '../layout/AdminLayout';
 
 const Announcement = () => {
@@ -18,19 +19,44 @@ const Announcement = () => {
     setNewAnnouncement((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!newAnnouncement.title || !newAnnouncement.message || !newAnnouncement.endDate) return;
-    setAnnouncements((prev) => [
-      ...prev,
-      {
-        ...newAnnouncement,
-        date: new Date().toLocaleString(),
-      },
-    ]);
-    setNewAnnouncement({ title: '', message: '', endDate: '' });
-    handleCloseModal(); // Animate on close
+  const fetchAnnouncements = async () => {
+    try {
+      const res = await axios.get('http://localhost:5106/api/announcement/all');
+      setAnnouncements(res.data.announcements || []);
+    } catch (error) {
+      console.error('Failed to fetch announcements', error);
+    }
   };
+
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  if (!newAnnouncement.title || !newAnnouncement.message || !newAnnouncement.endDate) return;
+
+  try {
+    const token = localStorage.getItem('token'); // adjust this if you're storing the token elsewhere
+
+    await axios.post(
+      'http://localhost:5106/api/announcement/create',
+      {
+        title: newAnnouncement.title,
+        message: newAnnouncement.message,
+      expiresAt: new Date(newAnnouncement.endDate).toISOString()
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true, // only if cookies are also being used
+      }
+    );
+
+    fetchAnnouncements(); // refresh list
+    setNewAnnouncement({ title: '', message: '', endDate: '' });
+    handleCloseModal();
+  } catch (error) {
+    console.error('Failed to post announcement', error);
+  }
+};
 
   const handleCloseModal = () => {
     if (modalRef.current) {
@@ -50,6 +76,10 @@ const Announcement = () => {
   };
 
   useEffect(() => {
+    fetchAnnouncements();
+  }, []);
+
+  useEffect(() => {
     if (showModal && modalRef.current) {
       gsap.fromTo(
         modalRef.current,
@@ -64,21 +94,6 @@ const Announcement = () => {
       );
     }
   }, [showModal]);
-
-  const Announcements = [
-    {
-      title: 'New Feature Released!',
-      message: 'We’ve added support for multi-format book filtering. Check it out!',
-      date: 'May 1, 2025',
-      endDate: 'May 10, 2025',
-    },
-    {
-      title: 'Scheduled Maintenance',
-      message: 'The system will be under maintenance from 12:00 AM to 2:00 AM.',
-      date: 'May 3, 2025',
-      endDate: 'May 4, 2025',
-    },
-  ];
 
   return (
     <AdminLayout>
@@ -95,7 +110,7 @@ const Announcement = () => {
 
         <div className="mb-8">
           <div className="grid gap-4">
-            {Announcements.map((a, i) => (
+            {announcements.map((a, i) => (
               <div
                 key={i}
                 className="bg-gradient-to-r from-indigo-50 to-white border border-indigo-200 rounded p-4 shadow-sm"
@@ -103,7 +118,8 @@ const Announcement = () => {
                 <h4 className="text-lg font-semibold text-indigo-800">{a.title}</h4>
                 <p className="text-gray-700 mt-1">{a.message}</p>
                 <div className="text-sm text-gray-500 mt-2">
-                  <span>Posted: {a.date}</span> &middot; <span>Ends: {a.endDate}</span>
+                  <span>Posted: {new Date(a.createdAt).toLocaleString()}</span> &middot;{' '}
+                  <span>Ends: {new Date(a.expiresAt).toLocaleDateString()}</span>
                 </div>
               </div>
             ))}

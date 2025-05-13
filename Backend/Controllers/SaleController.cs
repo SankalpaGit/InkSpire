@@ -18,7 +18,7 @@ public class SaleController : ControllerBase
 
     // Add a sale
     [HttpPost("add")]
-    [Authorize (Roles = "Admin")] // Only admins can add sales
+    [Authorize(Roles = "Admin")] // Only admins can add sales
     public IActionResult AddSale([FromBody] SaleModel model)
     {
         if (model.StartDate > model.EndDate)
@@ -35,9 +35,30 @@ public class SaleController : ControllerBase
         _dbContext.Sales.Add(model);
         _dbContext.SaveChanges();
 
-        return Ok(new { Message = "Sale added successfully.", SaleId = model.SaleId });
+        // Apply the discount to the book's price
+        if (model.BookId.HasValue)
+        {
+            // If the sale applies to a specific book
+            var book = _dbContext.Books.FirstOrDefault(b => b.BookId == model.BookId.Value);
+            if (book != null)
+            {
+                book.Price -= book.Price * (decimal)(model.DiscountPercentage / 100);
+            }
+        }
+        else
+        {
+            // If the sale applies to all books
+            var books = _dbContext.Books.ToList();
+            foreach (var book in books)
+            {
+                book.Price -= book.Price * (decimal)(model.DiscountPercentage / 100);
+            }
+        }
+
+        _dbContext.SaveChanges();
+
+        return Ok(new { Message = "Sale added successfully and discounts applied.", SaleId = model.SaleId });
     }
-    
     // Edit a sale
     [HttpPut("edit/{saleId}")]
     [Authorize] // Only admins can edit sales
@@ -75,7 +96,7 @@ public class SaleController : ControllerBase
 
     // Remove expired sales
     [HttpDelete("remove-expired")]
-    [Authorize (Roles = "Admin")] // Only admins can remove expired sales
+    [Authorize(Roles = "Admin")] // Only admins can remove expired sales
     public IActionResult RemoveExpiredSales()
     {
         var currentDate = DateTime.UtcNow;

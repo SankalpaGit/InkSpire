@@ -146,5 +146,28 @@ namespace Backend.Controllers
                 return StatusCode(500, new { Message = "An error occurred while retrieving reviews.", Details = ex.Message });
             }
         }
+
+        [HttpGet("average-rating/{bookId}")]
+        public IActionResult GetAverageRating(Guid bookId)
+        {
+            try
+            {
+                // Calculate the average rating for the specified book
+                var averageRating = _dbContext.Reviews
+                    .Where(r => r.BookId == bookId)
+                    .Average(r => (double?)r.Rating) ?? 0.0;
+
+                return Ok(new
+                {
+                    Message = "Average rating retrieved successfully.",
+                    BookId = bookId,
+                    AverageRating = Math.Round(averageRating, 2) // Round to 2 decimal places
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "An error occurred while retrieving the average rating.", Details = ex.Message });
+            }
+        }
     }
 }
