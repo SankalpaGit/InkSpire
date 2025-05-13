@@ -1,8 +1,33 @@
 import React, { useState, useEffect } from "react";
 import { FaTrashAlt, FaShoppingCart } from "react-icons/fa";
-
 import MemberLayout from "../layout/MemberLayout";
 import axios from "axios";
+
+// Simple Modal Component
+const Modal = ({ isOpen, onClose, onConfirm, message }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex justify-center items-center">
+      <div className="bg-white p-6 rounded-lg shadow-lg max-w-sm w-full">
+        <p>{message}</p>
+        <div className="mt-4 flex justify-between">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-300 rounded text-sm"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 bg-indigo-600 text-white rounded text-sm"
+          >
+            Confirm
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const Cart = () => {
   const [cartItems, setCartItems] = useState([]);
@@ -10,6 +35,8 @@ const Cart = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false); // Modal state
+  const [isProcessingCheckout, setIsProcessingCheckout] = useState(false); // Checkout loading state
 
   const fetchCart = async () => {
     setLoading(true);
@@ -114,14 +141,20 @@ const Cart = () => {
   const total = subtotal - discountAmount;
 
   const handleCheckout = async () => {
-    if (!window.confirm("Are you sure you want to checkout now?")) return;
+    setIsModalOpen(true); // Open the modal
+  };
 
+  const confirmCheckout = async () => {
+    setIsModalOpen(false); // Close the modal
+    setIsProcessingCheckout(true); // Start processing checkout
     setError("");
     setSuccess("");
+
     const token = localStorage.getItem("token");
     if (!token) {
       setError("Please log in to proceed with checkout.");
       setTimeout(() => (window.location.href = "/login"), 2000);
+      setIsProcessingCheckout(false);
       return;
     }
 
@@ -137,7 +170,8 @@ const Cart = () => {
       );
 
       setSuccess("Checkout successful!");
-      fetchCart(); // Refresh cart to empty it
+      setCartItems([]); // Clear the cart items immediately
+      fetchCart(); // Refresh cart to empty it from server
     } catch (error) {
       if (error.response?.status === 401) {
         setError("Your session has expired. Please log in again.");
@@ -150,18 +184,13 @@ const Cart = () => {
       }
     }
 
-    setTimeout(() => {
-      setError("");
-      setSuccess("");
-    }, 3000);
+    setIsProcessingCheckout(false); // Stop processing checkout
   };
 
   return (
     <MemberLayout>
       <div className="min-h-screen bg-gray-50 p-6">
-        <h2 className="text-3xl font-bold text-[#112742] mb-8">
-          Shopping Cart
-        </h2>
+        <h2 className="text-3xl font-bold text-[#112742] mb-8">Shopping Cart</h2>
 
         {error && (
           <p className="text-red-600 text-center mb-6 bg-red-100 p-4 rounded-lg">
@@ -177,10 +206,9 @@ const Cart = () => {
           <p className="text-gray-600 text-center">Loading cart...</p>
         ) : cartItems.length === 0 ? (
           <div className="text-center mt-20 text-gray-600">
-            <FaShoppingCart className="text-9xl  text-red-400 mx-auto mb-4 " />
+            <FaShoppingCart className="text-9xl text-red-400 mx-auto mb-4" />
             <p className="text-lg">Your cart is empty.</p>
           </div>
-
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Cart Items */}
@@ -297,8 +325,29 @@ const Cart = () => {
                 <FaShoppingCart /> Checkout
               </button>
             </div>
+
+
           </div>
         )}
+
+        {/* Show loader when processing checkout */}
+        {isProcessingCheckout && (
+          <div className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-50 backdrop-blur-sm">
+            <div className="flex flex-col justify-center items-center">
+              {/* Loader */}
+              <div className="animate-spin rounded-full border-t-4 border-indigo-600 w-16 h-16 mb-4"></div>
+              <p className="text-white text-lg">Processing...</p>
+            </div>
+          </div>
+        )}
+
+        {/* Modal for Confirmation */}
+        <Modal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onConfirm={confirmCheckout}
+          message="Are you sure you want to checkout now?"
+        />
       </div>
     </MemberLayout>
   );

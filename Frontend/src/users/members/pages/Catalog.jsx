@@ -49,12 +49,12 @@ const ProductPage = () => {
     setError("");
 
     const token = localStorage.getItem("token");
-    
+
 
     const url = query
       ? `http://localhost:5106/api/SearchBook/search?query=${encodeURIComponent(
-          query
-        )}`
+        query
+      )}`
       : `http://localhost:5106/api/ViewBook/all?pageNumber=1&pageSize=100`;
 
     axios
@@ -246,39 +246,39 @@ const ProductPage = () => {
                   paginatedBooks.map((book) => (
                     <div
                       key={book.id}
-                      className="bg-white p-4 rounded-xl shadow hover:shadow-lg transition-all h-fit"
+                      className="bg-white p-4 rounded-xl shadow border border-gray-300 transition-all h-fit"
                     >
                       <Link to={`/book/${book.id}`} onClick={book.id}>
-                        <img
-                          src={book.image}
-                          alt={book.title}
-                          className="h-52 w-full object-contain mb-4 rounded"
-                          onError={(e) => {
-                            e.target.src = "/default-cover.jpg";
-                          }}
-                        />
-                      </Link>
-                      <h3 className="font-semibold text-lg text-gray-800">
-                        <Link
-                          to={`/book/${book.id}`}
-                          className="hover:text-indigo-600"
-                        >
-                          {book.title}
-                        </Link>
-                      </h3>
-                      <p className="text-sm text-gray-600 mb-1">
-                        {book.author}
-                      </p>
-                      <div className="flex items-center justify-between">
-                        {renderStars(book.rating)}
-                        <p className="text-indigo-600 font-bold mt-1">
-                          ${book.price.toFixed(2)}
+                        <div className="bg-red-50 h-96 w-full flex items-center justify-center mb-4">
+                          <img
+                            src={book.image}
+                            alt={book.title}
+                            className="h-full w-full  object-cover"
+                            onError={(e) => {
+                              e.target.src = "/default-cover.jpg";
+                            }}
+                          />
+                        </div>
+
+
+                        <h3 className="font-semibold text-lg text-gray-800">
+                          <Link
+                            to={`/book/${book.id}`}
+                            className="hover:text-indigo-600"
+                          >
+                            {book.title}
+                          </Link>
+                        </h3>
+                        <p className="text-sm text-gray-600 mb-1">
+                          {book.author}
                         </p>
-                      </div>
-                      <button className="mt-4 w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700 transition-all flex items-center justify-center gap-2">
-                        <IoCartOutline className="text-xl" />
-                        Add to Cart
-                      </button>
+                        <div className="flex items-center justify-between">
+                          {renderStars(book.rating)}
+                          <p className="text-indigo-600 font-bold mt-1">
+                            ${book.price.toFixed(2)}
+                          </p>
+                        </div>
+                      </Link>
                     </div>
                   ))
                 )}
@@ -298,11 +298,10 @@ const ProductPage = () => {
                   <button
                     key={i}
                     onClick={() => changePage(i + 1)}
-                    className={`px-4 py-2 rounded ${
-                      currentPage === i + 1
-                        ? "bg-[#112742] text-white"
-                        : "bg-gray-100 hover:bg-gray-200"
-                    }`}
+                    className={`px-4 py-2 rounded ${currentPage === i + 1
+                      ? "bg-[#112742] text-white"
+                      : "bg-gray-100 hover:bg-gray-200"
+                      }`}
                   >
                     {i + 1}
                   </button>

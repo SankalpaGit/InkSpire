@@ -4,6 +4,7 @@ import { FaStarHalfAlt, FaTrashAlt, FaBookmark, FaRegBookmark } from "react-icon
 import { IoCartOutline } from "react-icons/io5";
 import MemberLayout from "../layout/MemberLayout";
 import axios from "axios";
+import { Link } from "react-router-dom";
 
 const renderStars = (rating) => {
   const full = Math.floor(rating);
@@ -83,7 +84,6 @@ const Bookmarks = () => {
               isBookmarked: true,
             };
           } catch (error) {
-            console.error(`Error fetching book ${b.bookId}:`, error.message);
             return {
               id: b.bookmarkId || "unknown-" + Math.random(),
               bookId: b.bookId || "",
@@ -120,71 +120,6 @@ const Bookmarks = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleToggleBookmark = async (bookId, isBookmarked) => {
-    setError("");
-    setSuccess("");
-    const token = localStorage.getItem("token");
-    if (!token) {
-      setError("Please log in to manage bookmarks.");
-      setTimeout(() => (window.location.href = "/login"), 2000);
-      return;
-    }
-
-    try {
-      if (isBookmarked) {
-        const response = await axios.delete(
-          `http://localhost:5106/api/Bookmark/remove?bookId=${bookId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        setSuccess(response.data.Message || "Bookmark removed successfully.");
-        setBookmarks((prev) =>
-          prev.map((book) =>
-            book.bookId === bookId ? { ...book, isBookmarked: false } : book
-          )
-        );
-      } else {
-        const response = await axios.post(
-          "http://localhost:5106/api/Bookmark/add",
-          { BookId: bookId },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-        setSuccess(response.data.Message || "Book bookmarked successfully.");
-        setBookmarks((prev) =>
-          prev.map((book) =>
-            book.bookId === bookId ? { ...book, isBookmarked: true } : book
-          )
-        );
-      }
-      fetchBookmarks();
-    } catch (error) {
-      console.error("Toggle Error:", error.response?.data, error.message);
-      if (error.response?.status === 401) {
-        setError("Your session has expired. Please log in again.");
-        setTimeout(() => (window.location.href = "/login"), 2000);
-      } else if (error.response?.status === 400) {
-        setError(error.response.data.Message || "Invalid request.");
-      } else if (error.response?.status === 404) {
-        setError(error.response.data.Message || "Bookmark not found.");
-      } else {
-        setError(
-          error.response?.data?.Message ||
-          `Failed to toggle bookmark: ${error.message}`
-        );
-      }
-    }
-    setTimeout(() => setError(""), 3000);
-    setTimeout(() => setSuccess(""), 3000);
   };
 
   const handleDelete = async (bookId) => {
@@ -299,17 +234,18 @@ const Bookmarks = () => {
                 key={book.id}
                 className="bg-white p-4 rounded-xl shadow hover:shadow-lg transition-all h-fit relative"
               >
-                <div
-                  className="h-52 mb-4 rounded"
-                  style={{
-                    backgroundImage: `url(${book.coverImage})`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                  }}
-                  onError={(e) => {
-                    e.target.style.backgroundImage = "url(/default-cover.jpg)";
-                  }}
-                />
+                <Link to={`/book/${book.bookId}`} onClick={book.bookId}>
+                <div className="bg-red-50 h-96 w-full flex items-center justify-center mb-4">
+                  <img
+                    src={book.coverImage}
+                    alt={book.title}
+                    className="h-full w-full  object-cover"
+                    onError={(e) => {
+                      e.target.src = "/default-cover.jpg";
+                    }}
+                  />
+                </div>
+                </Link>
                 <div className="flex justify-between items-center mb-1">
                   <h3 className="font-semibold text-lg text-gray-800">
                     {book.title}

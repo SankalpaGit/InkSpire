@@ -3,6 +3,8 @@ import { Link, useParams } from "react-router-dom";
 import { AiFillStar, AiOutlineStar } from "react-icons/ai";
 import { FaStarHalfAlt, FaBook, FaLanguage, FaCalendar, FaStore, FaBarcode, FaPlus, FaMinus, FaBookmark, FaRegBookmark } from "react-icons/fa";
 import { IoCartOutline, IoBusiness } from "react-icons/io5";
+import { FiInfo } from "react-icons/fi"; // Info icon
+import ReviewModal from "../components/ReviewModal";
 import { MdFormatAlignLeft } from "react-icons/md";
 import MemberLayout from "../layout/MemberLayout";
 import axios from "axios";
@@ -29,6 +31,8 @@ const BookDetailPage = () => {
   const { bookId } = useParams();
   const [book, setBook] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   const [error, setError] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [cartMessage, setCartMessage] = useState("");
@@ -297,19 +301,35 @@ const BookDetailPage = () => {
                 />
               </div>
               <div className="md:w-2/3 p-6 space-y-6">
-              <div className="flex items-center justify-between">
-                   <div>
-                  <h2 className="text-3xl font-bold text-gray-800">{book.title}</h2>
-                  <p className="text-lg text-gray-600 mt-1">by {book.author}</p>
-                </div>
-                <Link to={`/review/${bookId}`}>
-                 <button className="w-full sm:w-fit  text-gray-600 py-2 px-3 flex items-center justify-center gap-2 text-lg font-medium">
-                    <FaPlus className="text-lg" />
-                    Add Review
-                  </button>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-3xl font-bold text-gray-800">{book.title}</h2>
+                    <p className="text-lg text-gray-600 mt-1">by {book.author}</p>
+                    <button
+                      onClick={() => setIsModalOpen(true)}
+                      className="flex items-center text-sm text-indigo-600 hover:underline mt-4"
+                    >
+                      <FiInfo className="mr-1" />
+                      View Review
+                    </button>
+                    {isModalOpen && (
+                      <ReviewModal
+                        isOpen={isModalOpen}
+                        onClose={() => setIsModalOpen(false)}
+                        bookId={bookId}
+                      />
+                    )}
+
+
+                  </div>
+                  <Link to={`/review/${bookId}`}>
+                    <button className="w-full sm:w-fit  text-gray-600 py-2 px-3 flex items-center justify-center gap-2 text-lg font-medium">
+                      <FaPlus className="text-lg" />
+                      Add Review
+                    </button>
                   </Link>
-              </div>
-               
+                </div>
+
                 <div className="flex items-center gap-4 flex-wrap">
                   {renderStars(book.rating)}
                   <p className="text-2xl font-semibold text-indigo-600">
@@ -391,8 +411,8 @@ const BookDetailPage = () => {
                   <button
                     onClick={handleToggleBookmark}
                     className={`p-3 rounded-lg flex items-center justify-center ${isBookmarked
-                        ? "bg-indigo-600 text-white hover:bg-indigo-700"
-                        : "bg-gray-200 text-gray-600 hover:bg-gray-300"
+                      ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                      : "bg-gray-200 text-gray-600 hover:bg-gray-300"
                       } transition-colors ${isBookmarkLoading ? "opacity-50 cursor-not-allowed" : ""}`}
                     title={isBookmarked ? "Remove Bookmark" : "Add Bookmark"}
                     disabled={isBookmarkLoading}
@@ -403,7 +423,7 @@ const BookDetailPage = () => {
                       <FaRegBookmark className="text-xl" />
                     )}
                   </button>
-                 
+
                 </div>
               </div>
             </div>
